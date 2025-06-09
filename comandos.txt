@@ -1,0 +1,49 @@
+docker run --platform linux/amd64 -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=satc@2025" -p 1433:1433 --name etl_entregas -d mcr.microsoft.com/mssql/server:2022-latest
+
+
+🏆 Características especiais:
+🔗 Relacionamentos inteligentes:
+
+Clientes podem ser remetentes E destinatários
+Múltiplas entregas por cliente (distribuição realista)
+Motoristas e veículos reutilizados em várias entregas
+Rotas conectam cidades brasileiras reais
+
+📋 Dados brasileiros realistas:
+
+Nomes tipicamente brasileiros
+CPF/CNPJ formatados corretamente
+Cidades e estados reais do Brasil
+Placas antigas e Mercosul
+Preços realistas (combustível, multas, fretes)
+
+⚡ Performance otimizada:
+
+Inserção em lotes (batches de 5.000)
+Progresso em tempo real
+Estatísticas detalhadas ao final
+Controle de memória eficiente
+
+📊 Distribuição realista:
+
+70% das entregas são "Entregue"
+75% dos motoristas estão ativos
+60% das manutenções são preventivas
+Status inteligente baseado em datas
+
+💡 Exemplo de relacionamentos criados:
+
+Um cliente pode ter dezenas de entregas
+Um motorista faz múltiplas entregas
+Um veículo tem histórico completo (entregas, manutenções, multas)
+Datas consistentes entre coletas e entregas
+Valores realistas de frete baseados em distância
+
+🎊 Resultado final:
+Após a execução, você terá um banco de dados completo com 200.000 registros realistas prontos para:
+
+Análises de BI
+Desenvolvimento de aplicações
+Treinamento de modelos de ML
+Testes de performance
+Demos e apresentações
