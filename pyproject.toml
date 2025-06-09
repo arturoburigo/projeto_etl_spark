@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "projeto-etl-spark"
+version = "0.1.0"
+description = "Projeto ETL com Spark"
+authors = ["Your Name <your.email@example.com>"]
+packages = [
+    { include = "data" },
+    { include = "main.py" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+python-dotenv = "^1.0.0"
+pyodbc = "^5.0.1"
+pandas = "^2.1.4"
+SQLAlchemy = "^2.0.23"
+faker = "^22.6.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
