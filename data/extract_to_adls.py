@@ -26,7 +26,7 @@ SQL_DATABASE = os.getenv("SQL_DATABASE")
 SQL_SCHEMA = os.getenv("SQL_SCHEMA")
 SQL_USERNAME = os.getenv("SQL_USERNAME")
 SQL_PASSWORD = os.getenv("SQL_PASSWORD")
-
+    
 def create_sql_connection():
     """Cria conexão com o SQL Server"""
     try:

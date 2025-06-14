@@ -1,5 +1,11 @@
 docker run --platform linux/amd64 -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=satc@2025" -p 1433:1433 --name etl_entregas -d mcr.microsoft.com/mssql/server:2022-latest
 
+SQL_SERVER=localhost
+SQL_PORT=1433
+SQL_DATABASE=etl_entregas_db
+SQL_SCHEMA=entregas
+SQL_USERNAME=sa
+SQL_PASSWORD=satc@2025
 
 🏆 Características especiais:
 🔗 Relacionamentos inteligentes:

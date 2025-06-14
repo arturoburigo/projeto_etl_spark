@@ -162,33 +162,6 @@ class SQLServerSetup:
             print(f"❌ Erro no teste de conexão: {e}")
             return False
 
-    def create_sample_table(self) -> bool:
-        """Cria uma tabela de exemplo no schema"""
-        try:
-            print(f"📋 Criando tabela de exemplo no schema '{self.schema}'...")
-            with pyodbc.connect(self.db_conn_str) as conn:
-                conn.autocommit = True
-                cursor = conn.cursor()
-                
-                # Criar tabela de exemplo
-                create_table_sql = f"""
-                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[{self.schema}].[exemplo_entregas]') AND type in (N'U'))
-                CREATE TABLE [{self.schema}].[exemplo_entregas] (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    numero_pedido VARCHAR(50) NOT NULL,
-                    data_entrega DATETIME2 DEFAULT GETDATE(),
-                    status VARCHAR(20) DEFAULT 'PENDENTE',
-                    observacoes TEXT
-                )
-                """
-                cursor.execute(create_table_sql)
-                print(f"✅ Tabela de exemplo criada em '{self.schema}.exemplo_entregas'!")
-                return True
-                
-        except Exception as e:
-            print(f"❌ Erro ao criar tabela de exemplo: {e}")
-            return False
-
     def setup(self) -> bool:
         """Executa todo o processo de configuração"""
         print("🚀 Iniciando configuração do SQL Server...")
