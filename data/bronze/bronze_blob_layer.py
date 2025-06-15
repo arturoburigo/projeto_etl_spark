@@ -11,43 +11,39 @@ logging.basicConfig(
 load_dotenv()
 
 ACCOUNT_NAME = os.getenv("ADLS_ACCOUNT_NAME")
-CONTAINER_NAME = os.getenv("ADLS_BRONZE_SYSTEM_NAME")
+LANDING_CONTAINER_NAME = os.getenv("ADLS_FILE_SYSTEM_NAME") # container landing-zone
+BRONZE_CONTAINER_NAME = os.getenv("ADLS_BRONZE_CONTAINER_NAME") # new container bronze
 SAS_TOKEN = os.getenv("ADLS_SAS_TOKEN").replace('"', '')
 
-# Remove aspas se existirem
-if SAS_TOKEN.startswith('?'):
-    SAS_TOKEN = SAS_TOKEN[1:]
-
-BRONZE_DIR = "bronze"
-
-# Constrói a URL de conexão
+# URL conection
 blob_service_client = BlobServiceClient(
     account_url=f"https://{ACCOUNT_NAME}.blob.core.windows.net",
     credential=SAS_TOKEN
 )
 
-container_client = blob_service_client.get_container_client(CONTAINER_NAME)
+landing_container_client = blob_service_client.get_container_client(LANDING_CONTAINER_NAME)
+bronze_container_client = blob_service_client.get_container_client(BRONZE_CONTAINER_NAME)
 
-# Garante que o diretório bronze existe (no Blob, é só prefixo)
-def ensure_bronze_dir():
-    # No Blob Storage, diretórios são virtuais, não precisa criar
+# If the bronze container does not exist, create it
+try:
+    bronze_container_client.create_container()
+except Exception:
     pass
 
 def copy_csvs_to_bronze():
-    blobs = container_client.list_blobs()
-    csv_blobs = [b for b in blobs if b.name.endswith('.csv') and not b.name.startswith(BRONZE_DIR + '/')]
-    logging.info(f"Encontrados {len(csv_blobs)} arquivos CSV na landing-zone.")
+    blobs = landing_container_client.list_blobs()
+    csv_blobs = [b for b in blobs if b.name.endswith('.csv')]
+    logging.info(f"Find {len(csv_blobs)} CSV files in landing container.")
     for blob in csv_blobs:
         source_blob = blob.name
-        dest_blob = f"{BRONZE_DIR}/{os.path.basename(blob.name)}"
-        # Copia o blob para bronze
-        copied_blob = container_client.get_blob_client(dest_blob)
-        # Baixa e faz upload (pode ser feito server-side se preferir)
-        data = container_client.download_blob(source_blob).readall()
-        copied_blob.upload_blob(data, overwrite=True)
-        logging.info(f"Arquivo {source_blob} copiado para {dest_blob}")
-    logging.info("Cópia para bronze concluída!")
+        dest_blob = os.path.basename(blob.name)
+        # Download blob from landing container
+        data = landing_container_client.download_blob(source_blob).readall()
+        # Upload blob to bronze container
+        bronze_blob = bronze_container_client.get_blob_client(dest_blob)
+        bronze_blob.upload_blob(data, overwrite=True)
+        logging.info(f"File {source_blob} copied to bronze container as {dest_blob}")
+    logging.info("All CSV files copied to bronze container successfully!")
 
 if __name__ == "__main__":
-    ensure_bronze_dir()
     copy_csvs_to_bronze()

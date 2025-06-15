@@ -10,7 +10,7 @@ def create_sql_connection(sql_config):
         engine = create_engine(conn_str)
         return engine
     except Exception as e:
-        logging.error(f"Erro ao criar conexão com SQL Server: {str(e)}")
+        logging.error(f"Error creating connection to SQL Server: {str(e)}")
         raise
 
 def get_tables(engine, schema):
@@ -19,7 +19,7 @@ def get_tables(engine, schema):
         df_tables = pd.read_sql(query, engine)
         return df_tables
     except Exception as e:
-        logging.error(f"Erro ao obter tabelas: {str(e)}")
+        logging.error(f"Error obtaining tables: {str(e)}")
         raise
 
 def extract_table(engine, schema, table_name):
@@ -28,5 +28,5 @@ def extract_table(engine, schema, table_name):
         df = pd.read_sql(query, engine)
         return df
     except Exception as e:
-        logging.error(f"Erro ao extrair dados da tabela {table_name}: {str(e)}")
+        logging.error(f"Error extracting data from the table {table_name}: {str(e)}")
         raise
