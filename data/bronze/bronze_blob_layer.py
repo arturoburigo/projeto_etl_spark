@@ -11,7 +11,7 @@ logging.basicConfig(
 load_dotenv()
 
 ACCOUNT_NAME = os.getenv("ADLS_ACCOUNT_NAME")
-CONTAINER_NAME = os.getenv("ADLS_FILE_SYSTEM_NAME")
+CONTAINER_NAME = os.getenv("ADLS_BRONZE_SYSTEM_NAME")
 SAS_TOKEN = os.getenv("ADLS_SAS_TOKEN").replace('"', '')
 
 # Remove aspas se existirem
