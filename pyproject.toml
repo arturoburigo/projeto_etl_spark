@@ -15,6 +15,11 @@ pyodbc = "^5.0.1"
 pandas = "^2.1.4"
 SQLAlchemy = "^2.0.23"
 faker = "^22.6.0"
+azure-storage-file-datalake = "^12.20.0"
+pyspark = "~3.3.0"
+delta-spark = "~2.3.0"
+pyarrow = "^20.0.0"
+azure-storage-blob = "^12.19.0"
 
 [build-system]
 requires = ["poetry-core"]
