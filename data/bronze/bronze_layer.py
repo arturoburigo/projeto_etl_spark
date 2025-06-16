@@ -5,42 +5,41 @@ from azure.storage.blob import BlobServiceClient
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import lit, current_date, current_timestamp
 
-# Configuração do logging para exibir informações no console
+# Loggin config is set to INFO level to capture all relevant messages 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-# Carrega variáveis de ambiente do arquivo .env
+# Load environment variables from .env file
 load_dotenv()
 
-# Recupera as variáveis de ambiente necessárias para conexão com o Azure Blob Storage
+# Enviroment variables necessary for Azure Blob Storage connection
 ACCOUNT_NAME = os.getenv("ADLS_ACCOUNT_NAME")
 LANDING_CONTAINER_NAME = os.getenv("ADLS_FILE_SYSTEM_NAME")
 BRONZE_CONTAINER_NAME = os.getenv("ADLS_BRONZE_CONTAINER_NAME")
 SAS_TOKEN = os.getenv("ADLS_SAS_TOKEN").replace('"', '')
 
-# Cria o cliente de serviço do Blob Storage usando a URL da conta e o SAS Token
+# Create the BlobServiceClient using the account URL and SAS Token
 blob_service_client = BlobServiceClient(
     account_url=f"https://{ACCOUNT_NAME}.blob.core.windows.net",
     credential=SAS_TOKEN
 )
 
-# Cria clientes para os containers de origem (landing) e destino (bronze)
+# Create container clients for landing and bronze
 landing_container_client = blob_service_client.get_container_client(LANDING_CONTAINER_NAME)
 bronze_container_client = blob_service_client.get_container_client(BRONZE_CONTAINER_NAME)
 
-# Se o container bronze não existir, cria ele
+# If the bronze container does not exist, create it
 try:
     bronze_container_client.create_container()
     logging.info(f"Container '{BRONZE_CONTAINER_NAME}' created.")
 except Exception as e:
-    # A exceção mais comum aqui é o container já existir, o que não é um erro.
+    # If the container already exists, we log a warning instead of raising an error.
     logging.warning(f"Could not create container '{BRONZE_CONTAINER_NAME}'. It might already exist.")
     pass
 
-# Cria SparkSession com as configurações corretas para Delta Lake e Azure
-# Esta é a parte crucial que foi corrigida
+# Create SparkSession with Delta Lake and Azure configurations
 spark = SparkSession.builder \
     .appName("bronze_layer") \
     .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
@@ -49,13 +48,13 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 
-# Função que copia arquivos CSV do container landing para o container bronze
+# Function to copy CSV files from landing container to bronze container
 def copy_csvs_to_bronze():
-    # Configura credenciais SAS para acesso via Spark
+    # Credentials SAS configured for Spark to access Azure Blob Storage
     spark.conf.set(f"fs.azure.sas.{LANDING_CONTAINER_NAME}.{ACCOUNT_NAME}.blob.core.windows.net", SAS_TOKEN)
     spark.conf.set(f"fs.azure.sas.{BRONZE_CONTAINER_NAME}.{ACCOUNT_NAME}.blob.core.windows.net", SAS_TOKEN)
     
-    # Lista arquivos CSV no container landing
+    # List CSV files in the landing container
     blobs = landing_container_client.list_blobs()
     csv_blobs = [b for b in blobs if b.name.endswith('.csv')]
     logging.info(f"Found {len(csv_blobs)} CSV files in landing container.")
@@ -68,18 +67,18 @@ def copy_csvs_to_bronze():
             
             logging.info(f"Processing file: {file_name}")
             
-            # Lê CSV no Spark DataFrame, inferindo o schema
+            # Read CSV into Spark DataFrame, inferring the schema
             df = spark.read.option("header", "true").option("inferSchema", "true").csv(source_path)
             
-            # Adiciona colunas de metadata
+            # Add metadata columns for processing date, timestamp, and source file name
             df = df.withColumn("processing_date", current_date()) \
                    .withColumn("processing_timestamp", current_timestamp()) \
                    .withColumn("source_file_name", lit(file_name))
             
-            # Define o caminho de destino Delta no container bronze
+            # Set the destination path for the Delta table in the bronze container
             dest_path = f"wasbs://{BRONZE_CONTAINER_NAME}@{ACCOUNT_NAME}.blob.core.windows.net/{table_name}"
             
-            # Escreve em formato Delta Lake, sobrescrevendo se já existir
+            # Writing the DataFrame to Delta format in the bronze container
             df.write.format("delta").mode("overwrite").option("overwriteSchema", "true").save(dest_path)
             logging.info(f"Successfully written Delta table for {file_name} to bronze at {dest_path}")
         except Exception as e:
@@ -88,7 +87,7 @@ def copy_csvs_to_bronze():
 
     logging.info("All CSV files processed and written to bronze as Delta tables.")
 
-# Executa a função principal se o script for chamado diretamente
+# Execute the main function if the script is run directly
 if __name__ == "__main__":
     copy_csvs_to_bronze()
     spark.stop()
