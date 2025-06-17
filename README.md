@@ -1,45 +1,133 @@
-Overview
-========
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+#  Projeto ETL com Apache Spark
 
-Project Contents
-================
+Este projeto realiza a **extração de dados de um banco SQL Server**, armazena os dados em um **Data Lake na Azure** e realiza o processamento distribuído com **Apache Spark**, orquestrado por **Apache Airflow**.
 
-Your Astro project contains the following files and folders:
+---
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+##  Objetivos
 
-Deploy Your Project Locally
-===========================
+-  Extrair dados do **SQL Server**
+-  Armazenar dados no **Azure Data Lake**
+-  Processar os dados com **Apache Spark**, usando **Delta Lake** e **Apache Iceberg**
+-  Automatizar o pipeline com **Apache Airflow**
 
-Start Airflow on your local machine by running 'astro dev start'.
+---
 
-This command will spin up five Docker containers on your machine, each for a different Airflow component:
+##  Tecnologias Utilizadas
 
-- Postgres: Airflow's Metadata Database
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- DAG Processor: The Airflow component responsible for parsing DAGs
-- API Server: The Airflow component responsible for serving the Airflow UI and API
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+- Python >= 3.10
+- Apache Spark
+- Apache Airflow (via Docker)
+- Azure Data Lake
+- Delta Lake & Apache Iceberg
+- Poetry (gerenciador de dependências)
+- Docker & Docker Compose
 
-When all five containers are ready the command will open the browser to the Airflow UI at http://localhost:8080/. You should also be able to access your Postgres Database at 'localhost:5432/postgres' with username 'postgres' and password 'postgres'.
+---
 
-Note: If you already have either of the above ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+##  Instalação
 
-Deploy Your Project to Astronomer
-=================================
+### Pré-requisitos
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
+- [Python 3.10+](https://www.python.org/downloads/)
+- [Docker](https://www.docker.com/)
+- [Azure CLI](https://learn.microsoft.com/pt-br/cli/azure/install-azure-cli)
+- [Poetry](https://python-poetry.org/docs/#installation)
 
-Contact
-=======
+### Instale as dependências do projeto
 
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+```bash
+poetry install
+```
+
+---
+
+##  Como Usar
+
+### 1. Subindo o Apache Airflow
+
+```bash
+cd astro
+docker-compose up -d
+```
+
+Acesse o Airflow: [http://localhost:8080](http://localhost:8080)
+
+### 2. Executando o pipeline
+
+- Configure as **credenciais do Azure**
+- Inicie o Airflow
+- Execute o DAG: `sqlserver_to_adls_dag`
+
+### 3. Rodando scripts Spark
+
+```bash
+spark-submit data/create_schema_and_columns.py
+```
+
+---
+
+##  Estrutura do Projeto
+
+```text
+├── astro/              # Ambiente Airflow
+│   ├── dags/           # DAGs do Airflow
+│   ├── tests/          # Testes dos DAGs
+│   └── Dockerfile      # Imagem do Airflow
+├── data/               # Scripts auxiliares (Spark)
+├── pyproject.toml      # Dependências gerenciadas pelo Poetry
+├── poetry.lock         # Lockfile de dependências
+├── comandos.txt        # Comandos úteis
+└── README.md           # Documentação do projeto
+```
+
+---
+
+##  Orquestração com Airflow
+
+- DAG principal: `sqlserver_to_adls_dag.py`
+- Responsável por:
+  - Extração de dados do SQL Server
+  - Movimentação para o Azure Data Lake
+- Pode ser executado manualmente ou agendado
+
+---
+
+##  Testes
+
+- Localizados em: `astro/tests/`
+- Testes dos DAGs e componentes do pipeline
+
+---
+
+##  Pipeline ETL
+
+### Etapas:
+
+1. **Extração**: dados oriundos do SQL Server
+2. **Carga Inicial**: camada *landing* no Azure Data Lake
+3. **Transformação**: processamento com Spark usando Delta Lake e Iceberg
+4. **Carga Final**: camada *gold*
+
+### Ferramentas:
+
+- **Airflow** → orquestração do pipeline
+- **Spark** → processamento distribuído
+- **Azure Data Lake** → armazenamento escalável
+
+---
+
+##  Autores
+
+- [Arturo Burigo](https://github.com/arturoburigo)
+- [Luiz Bezerra](https://github.com/bezerraluiz)
+- [Gabriel Morona](https://github.com/M0rona)
+- [Maria Laura](https://github.com/laura27241)
+- [Amanda Dimas](https://github.com/amandadimas)
+
+---
+
+##  Licença
+
+Este projeto está licenciado sob os termos da **MIT License**. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
