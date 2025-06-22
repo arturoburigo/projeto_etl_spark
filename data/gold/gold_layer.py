@@ -301,8 +301,8 @@ def process_facts():
         .join(dim_rota, col("IDENTIFICADOR_ROTA") == dim_rota.id_rota_origem, "left") \
         .join(dim_tipo_carga, col("IDENTIFICADOR_TIPO_CARGA") == dim_tipo_carga.id_tipo_carga_origem, "left") \
         .join(dim_data.alias("d_ini"), to_date(col("DATA_INICIO_ENTREGA")) == col("d_ini.data_completa"), "left") \
-        .join(dim_data.alias("d_prev"), to_date(col("DATA_PREVISAO")) == col("d_prev.data_completa"), "left") \
-        .join(dim_data.alias("d_fim"), to_date(col("DATA_CONCLUSAO")) == col("d_fim.data_completa"), "left") \
+        .join(dim_data.alias("d_prev"), to_date(col("DATA_PREVISAO_FIM_ENTREGA")) == col("d_prev.data_completa"), "left") \
+        .join(dim_data.alias("d_fim"), to_date(col("DATA_FIM_REAL_ENTREGA")) == col("d_fim.data_completa"), "left") \
         .select(
             col("id_veiculo_key"),
             col("id_motorista_key"),
@@ -314,9 +314,9 @@ def process_facts():
             col("d_prev.data_key").alias("data_previsao_fim_entrega_key"),
             col("d_fim.data_key").alias("data_fim_real_entrega_key"),
             col("IDENTIFICADOR_ENTREGA").alias("id_entrega_degenerada"),
-            col("STATUS").alias("status_entrega"),
-            col("VALOR").alias("valor_frete"),
-            col("PESO_KG").alias("peso_carga_kg")
+            col("STATUS_ENTREGA").alias("status_entrega"),
+            col("VALOR_FRETE").alias("valor_frete"),
+            col("PESO_CARGA_KG").alias("peso_carga_kg")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
     save_gold_table(fato_entregas, "Fato_Entregas")
 
@@ -328,7 +328,7 @@ def process_facts():
     # A FK em Fato_Coletas aponta para a dimensão degenerada em Fato_Entregas
     fato_coletas = fato_coletas_silver \
         .join(fato_entregas_gold, fato_coletas_silver.IDENTIFICADOR_ENTREGA == fato_entregas_gold.id_entrega_degenerada, "left") \
-        .join(dim_data, to_date(fato_coletas_silver.DATA_COLETA) == dim_data.data_completa, "left") \
+        .join(dim_data, to_date(fato_coletas_silver.DATA_HORA_COLETA) == dim_data.data_completa, "left") \
         .select(
             col("id_entrega_degenerada").alias("id_entrega_key"),
             col("data_key").alias("data_hora_coleta_key"),
@@ -345,15 +345,15 @@ def process_facts():
     fato_manutencoes_silver = load_silver_table("manutencoes")
     fato_manutencoes = fato_manutencoes_silver \
         .join(dim_veiculo, fato_manutencoes_silver.IDENTIFICADOR_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
-        .join(dim_data, to_date(fato_manutencoes_silver.DATA) == dim_data.data_completa, "left") \
+        .join(dim_data, to_date(fato_manutencoes_silver.DATA_MANUTENCAO) == dim_data.data_completa, "left") \
         .select(
             col("id_veiculo_key"),
             col("data_key").alias("data_manutencao_key"),
             col("IDENTIFICADOR_MANUTENCAO").alias("id_manutencao_degenerada"),
-            col("TIPO").alias("tipo_manutencao"),
-            col("DESCRICAO").alias("descricao_servico"),
-            col("CUSTO").alias("custo_manutencao"),
-            col("TEMPO_PARADO").alias("tempo_parado_horas")
+            col("TIPO_MANUTENCAO").alias("tipo_manutencao"),
+            col("DESCRICAO_SERVICO").alias("descricao_servico"),
+            col("CUSTO_MANUTENCAO").alias("custo_manutencao"),
+            col("TEMPO_PARADO_HORAS").alias("tempo_parado_horas")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
     save_gold_table(fato_manutencoes, "Fato_Manutencoes")
 
@@ -362,14 +362,14 @@ def process_facts():
     fato_abastecimentos_silver = load_silver_table("abastecimentos")
     fato_abastecimentos = fato_abastecimentos_silver \
         .join(dim_veiculo, fato_abastecimentos_silver.IDENTIFICADOR_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
-        .join(dim_data, to_date(fato_abastecimentos_silver.DATA) == dim_data.data_completa, "left") \
+        .join(dim_data, to_date(fato_abastecimentos_silver.DATA_ABASTECIMENTO) == dim_data.data_completa, "left") \
         .select(
             col("id_veiculo_key"),
             col("data_key").alias("data_abastecimento_key"),
             col("IDENTIFICADOR_ABASTECIMENTO").alias("id_abastecimento_degenerada"),
-            col("COMBUSTIVEL").alias("tipo_combustivel"),
-            col("VOLUME").alias("litros"),
-            col("VALOR").alias("valor_total")
+            col("TIPO_COMBUSTIVEL").alias("tipo_combustivel"),
+            col("LITROS").alias("litros"),
+            col("VALOR_TOTAL").alias("valor_total")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
     save_gold_table(fato_abastecimentos, "Fato_Abastecimentos")
 
@@ -379,16 +379,16 @@ def process_facts():
     fato_multas = fato_multas_silver \
         .join(dim_veiculo, fato_multas_silver.IDENTIFICADOR_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
         .join(dim_motorista, fato_multas_silver.IDENTIFICADOR_MOTORISTA == dim_motorista.id_motorista_origem, "left") \
-        .join(dim_data, to_date(fato_multas_silver.DATA) == dim_data.data_completa, "left") \
+        .join(dim_data, to_date(fato_multas_silver.DATA_MULTA) == dim_data.data_completa, "left") \
         .select(
             col("id_veiculo_key"),
             col("id_motorista_key"),
             col("data_key").alias("data_multa_key"),
             col("IDENTIFICADOR_MULTA").alias("id_multa_degenerada"),
-            col("LOCAL").alias("local_multa"),
-            col("INFRACAO").alias("descricao_infracao"),
+            col("LOCAL_MULTA").alias("local_multa"),
+            col("DESCRICAO_INFRACAO").alias("descricao_infracao"),
             col("STATUS_PAGAMENTO").alias("status_pagamento"),
-            col("VALOR").alias("valor_multa")
+            col("VALOR_MULTA").alias("valor_multa")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
     save_gold_table(fato_multas, "Fato_Multas")
 
@@ -410,7 +410,7 @@ def process_kpis_and_metrics():
 
     # KPI 2: Custo Médio de Frete por Rota
     dim_rota = spark.read.format("delta").load(get_gold_path("Dim_Rota"))
-    kpi_custo_rota = fato_entregas.join(dim_rota, "id_rota_key") \
+    kpi_custo_rota = fato_entregas.join(dim_rota, "id_rota_origem") \
         .groupBy("nome_rota", "origem", "destino") \
         .agg(avg("valor_frete").alias("custo_medio_frete"))
     save_gold_table(kpi_custo_rota, "kpi_custo_medio_frete_por_rota")
@@ -449,7 +449,7 @@ if __name__ == "__main__":
     try:
         # create_container_if_not_exists(ACCOUNT_NAME, GOLD_CONTAINER_NAME, SAS_TOKEN)
         # process_dimensions()
-        process_facts()
+        # process_facts()
         process_kpis_and_metrics()
         logging.info("Pipeline GOLD dimensional executado com sucesso!")
     except Exception as e:
