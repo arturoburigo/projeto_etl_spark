@@ -225,9 +225,79 @@ def process_facts():
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
     save_gold_table(fato_entregas, "Fato_Entregas")
 
-    # Outras tabelas Fato (Coletas, Manutencoes, etc.) seguiriam o mesmo padrão de join e select.
-    # Por brevidade, o código para elas não está totalmente expandido aqui, mas a lógica é idêntica.
-    logging.info("Processamento das tabelas Fato concluído.")
+    # Fato_Coletas
+    logging.info("Processando Fato_Coletas.")
+    fato_coletas_silver = load_silver_table("coletas")
+    fato_entregas_gold = spark.read.format("delta").load(get_gold_path("Fato_Entregas"))
+    
+    # A FK em Fato_Coletas aponta para a dimensão degenerada em Fato_Entregas
+    fato_coletas = fato_coletas_silver \
+        .join(fato_entregas_gold, fato_coletas_silver.ID_ENTREGA == fato_entregas_gold.id_entrega_degenerada, "left") \
+        .join(dim_data, to_date(fato_coletas_silver.DATA_HORA_COLETA) == dim_data.data_completa, "left") \
+        .select(
+            col("id_entrega_degenerada").alias("id_entrega_key"),
+            col("data_key").alias("data_hora_coleta_key"),
+            col("ID_COLETA").alias("id_coleta_degenerada"),
+            col("STATUS_COLETA").alias("status_coleta"),
+            col("ENDERECO_COLETA").alias("endereco_coleta"),
+            col("OBSERVACOES").alias("observacoes"),
+            lit(1).alias("quantidade_coletas")
+        ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
+    save_gold_table(fato_coletas, "Fato_Coletas")
+
+    # Fato_Manutencoes
+    logging.info("Processando Fato_Manutencoes.")
+    fato_manutencoes_silver = load_silver_table("manutencoes")
+    fato_manutencoes = fato_manutencoes_silver \
+        .join(dim_veiculo, fato_manutencoes_silver.ID_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
+        .join(dim_data, to_date(fato_manutencoes_silver.DATA_MANUTENCAO) == dim_data.data_completa, "left") \
+        .select(
+            col("id_veiculo_key"),
+            col("data_key").alias("data_manutencao_key"),
+            col("ID_MANUTENCAO").alias("id_manutencao_degenerada"),
+            col("TIPO_MANUTENCAO").alias("tipo_manutencao"),
+            col("DESCRICAO").alias("descricao_servico"),
+            col("CUSTO").alias("custo_manutencao"),
+            col("TEMPO_PARADO_H").alias("tempo_parado_horas")
+        ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
+    save_gold_table(fato_manutencoes, "Fato_Manutencoes")
+
+    # Fato_Abastecimentos
+    logging.info("Processando Fato_Abastecimentos.")
+    fato_abastecimentos_silver = load_silver_table("abastecimentos")
+    fato_abastecimentos = fato_abastecimentos_silver \
+        .join(dim_veiculo, fato_abastecimentos_silver.ID_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
+        .join(dim_data, to_date(fato_abastecimentos_silver.DATA_ABASTECIMENTO) == dim_data.data_completa, "left") \
+        .select(
+            col("id_veiculo_key"),
+            col("data_key").alias("data_abastecimento_key"),
+            col("ID_ABASTECIMENTO").alias("id_abastecimento_degenerada"),
+            col("TIPO_COMBUSTIVEL").alias("tipo_combustivel"),
+            col("LITROS").alias("litros"),
+            col("VALOR_TOTAL").alias("valor_total")
+        ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
+    save_gold_table(fato_abastecimentos, "Fato_Abastecimentos")
+
+    # Fato_Multas
+    logging.info("Processando Fato_Multas.")
+    fato_multas_silver = load_silver_table("multas")
+    fato_multas = fato_multas_silver \
+        .join(dim_veiculo, fato_multas_silver.ID_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
+        .join(dim_motorista, fato_multas_silver.ID_MOTORISTA == dim_motorista.id_motorista_origem, "left") \
+        .join(dim_data, to_date(fato_multas_silver.DATA_MULTA) == dim_data.data_completa, "left") \
+        .select(
+            col("id_veiculo_key"),
+            col("id_motorista_key"),
+            col("data_key").alias("data_multa_key"),
+            col("ID_MULTA").alias("id_multa_degenerada"),
+            col("LOCAL").alias("local_multa"),
+            col("DESCRICAO").alias("descricao_infracao"),
+            col("STATUS_PAGAMENTO").alias("status_pagamento"),
+            col("VALOR").alias("valor_multa")
+        ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
+    save_gold_table(fato_multas, "Fato_Multas")
+
+    logging.info("Processamento de todas as tabelas Fato concluído.")
 
 # --- KPIs e Métricas ---
 def process_kpis_and_metrics():

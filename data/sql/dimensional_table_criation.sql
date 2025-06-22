@@ -16,7 +16,7 @@ CREATE TABLE Dim_Data (
 );
 
 CREATE TABLE Dim_Cliente (
-    id_cliente_key INT PRIMARY KEY IDENTITY(1,1),
+    id_cliente_key INT PRIMARY KEY IDENTI   TY(1,1),
     id_cliente_origem INT UNIQUE,
     nome_cliente VARCHAR(255) NOT NULL,
     tipo_cliente VARCHAR(50),
