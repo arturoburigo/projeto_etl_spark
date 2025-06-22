@@ -269,8 +269,8 @@ def process_dimensions():
         col("NOME_ROTA").alias("nome_rota"),
         col("ORIGEM").alias("origem"),
         col("DESTINO").alias("destino"),
-        col("DISTANCIA").alias("distancia_km"),
-        col("TEMPO_ESTIMADO").alias("tempo_estimado_horas")
+        col("DISTANCIA_KM").alias("distancia_km"),
+        col("TEMPO_ESTIMADO_HORAS").alias("tempo_estimado_horas")
     )
     merge_dimension(df_dim_rota, "Dim_Rota", "id_rota_origem")
 
@@ -292,16 +292,17 @@ def process_facts():
     # Fato_Entregas
     logging.info("Processando Fato_Entregas.")
     fato_entregas_silver = load_silver_table("entregas")
+    # Use col("NOME_COLUNA") para acessar colunas, não atributo direto
     fato_entregas = fato_entregas_silver \
-        .join(dim_veiculo, fato_entregas_silver.IDENTIFICADOR_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
-        .join(dim_motorista, fato_entregas_silver.IDENTIFICADOR_MOTORISTA == dim_motorista.id_motorista_origem, "left") \
-        .join(dim_cliente.alias("rem"), fato_entregas_silver.IDENTIFICADOR_CLIENTE_REMETENTE == col("rem.id_cliente_origem"), "left") \
-        .join(dim_cliente.alias("dest"), fato_entregas_silver.IDENTIFICADOR_CLIENTE_DESTINATARIO == col("dest.id_cliente_origem"), "left") \
-        .join(dim_rota, fato_entregas_silver.IDENTIFICADOR_ROTA == dim_rota.id_rota_origem, "left") \
-        .join(dim_tipo_carga, fato_entregas_silver.IDENTIFICADOR_TIPO_CARGA == dim_tipo_carga.id_tipo_carga_origem, "left") \
-        .join(dim_data.alias("d_ini"), to_date(fato_entregas_silver.DATA_INICIO) == col("d_ini.data_completa"), "left") \
-        .join(dim_data.alias("d_prev"), to_date(fato_entregas_silver.DATA_PREVISAO) == col("d_prev.data_completa"), "left") \
-        .join(dim_data.alias("d_fim"), to_date(fato_entregas_silver.DATA_CONCLUSAO) == col("d_fim.data_completa"), "left") \
+        .join(dim_veiculo, col("IDENTIFICADOR_VEICULO") == dim_veiculo.id_veiculo_origem, "left") \
+        .join(dim_motorista, col("IDENTIFICADOR_MOTORISTA") == dim_motorista.id_motorista_origem, "left") \
+        .join(dim_cliente.alias("rem"), col("IDENTIFICADOR_CLIENTE_REMETENTE") == col("rem.id_cliente_origem"), "left") \
+        .join(dim_cliente.alias("dest"), col("IDENTIFICADOR_CLIENTE_DESTINATARIO") == col("dest.id_cliente_origem"), "left") \
+        .join(dim_rota, col("IDENTIFICADOR_ROTA") == dim_rota.id_rota_origem, "left") \
+        .join(dim_tipo_carga, col("IDENTIFICADOR_TIPO_CARGA") == dim_tipo_carga.id_tipo_carga_origem, "left") \
+        .join(dim_data.alias("d_ini"), to_date(col("DATA_INICIO_ENTREGA")) == col("d_ini.data_completa"), "left") \
+        .join(dim_data.alias("d_prev"), to_date(col("DATA_PREVISAO")) == col("d_prev.data_completa"), "left") \
+        .join(dim_data.alias("d_fim"), to_date(col("DATA_CONCLUSAO")) == col("d_fim.data_completa"), "left") \
         .select(
             col("id_veiculo_key"),
             col("id_motorista_key"),
@@ -446,8 +447,8 @@ def process_kpis_and_metrics():
 
 if __name__ == "__main__":
     try:
-        create_container_if_not_exists(ACCOUNT_NAME, GOLD_CONTAINER_NAME, SAS_TOKEN)
-        process_dimensions()
+        # create_container_if_not_exists(ACCOUNT_NAME, GOLD_CONTAINER_NAME, SAS_TOKEN)
+        # process_dimensions()
         process_facts()
         process_kpis_and_metrics()
         logging.info("Pipeline GOLD dimensional executado com sucesso!")
