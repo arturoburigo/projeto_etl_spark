@@ -8,6 +8,7 @@ from pyspark.sql.functions import (
     date_format, to_date, expr, concat, when, sum, avg, count
 )
 from delta.tables import DeltaTable
+from azure.storage.blob import BlobServiceClient
 
 # Configuração do Logging
 logging.basicConfig(
@@ -23,6 +24,26 @@ ACCOUNT_NAME = os.getenv("ADLS_ACCOUNT_NAME")
 SILVER_CONTAINER_NAME = os.getenv("ADLS_SILVER_CONTAINER_NAME")
 GOLD_CONTAINER_NAME = os.getenv("ADLS_GOLD_CONTAINER_NAME")
 SAS_TOKEN = os.getenv("ADLS_SAS_TOKEN", "").replace('"', '')
+
+def create_container_if_not_exists(account_name, container_name, sas_token):
+    """Cria um container no Azure Blob Storage se ele não existir."""
+    if not container_name:
+        logging.error("Nome do container de destino (Gold) não definido. Verifique a variável de ambiente ADLS_GOLD_CONTAINER_NAME.")
+        raise ValueError("Nome do container Gold não pode ser nulo.")
+    try:
+        account_url = f"https://{account_name}.blob.core.windows.net"
+        blob_service_client = BlobServiceClient(account_url=account_url, credential=sas_token)
+        container_client = blob_service_client.get_container_client(container_name)
+
+        if not container_client.exists():
+            logging.info(f"Container '{container_name}' não existe. Criando...")
+            container_client.create_container()
+            logging.info(f"Container '{container_name}' criado com sucesso.")
+        else:
+            logging.info(f"Container '{container_name}' já existe.")
+    except Exception as e:
+        logging.error(f"Falha ao criar ou verificar o container '{container_name}': {e}", exc_info=True)
+        raise
 
 # Inicialização da Sessão Spark
 def get_spark_session():
@@ -48,7 +69,16 @@ def get_gold_path(table_name):
 def load_silver_table(table_name):
     path = get_silver_path(table_name)
     logging.info(f"Lendo tabela da camada Silver: {table_name} de {path}")
-    return spark.read.format("delta").load(path)
+    try:
+        return spark.read.format("delta").load(path)
+    except Exception as e:
+        if 'Path does not exist' in str(e):
+            logging.error(f"ERRO: A tabela de origem '{table_name}' não foi encontrada no caminho: {path}")
+            logging.error("Verifique se o pipeline da camada Silver foi executado com sucesso antes de rodar o pipeline da Gold.")
+            raise FileNotFoundError(f"Tabela de origem não encontrada na camada Silver: {path}") from e
+        else:
+            logging.error(f"Erro inesperado ao ler a tabela '{table_name}' da camada Silver.", exc_info=True)
+            raise e
 
 def save_gold_table(df, table_name):
     path = get_gold_path(table_name)
@@ -112,7 +142,7 @@ def process_dimensions():
     process_dim_data()
 
     # Dim_Cliente
-    df_clientes_silver = load_silver_table("clientes")
+    df_clientes_silver = load_silver_table("cliente")
     df_dim_cliente = df_clientes_silver.select(
         col("ID_CLIENTE").alias("id_cliente_origem"),
         col("NOME").alias("nome_cliente"),
@@ -129,7 +159,7 @@ def process_dimensions():
     merge_dimension(df_dim_cliente, "Dim_Cliente", "id_cliente_origem")
 
     # Dim_Motorista
-    df_motoristas_silver = load_silver_table("motoristas")
+    df_motoristas_silver = load_silver_table("motorista")
     df_dim_motorista = df_motoristas_silver.select(
         col("ID_MOTORISTA").alias("id_motorista_origem"),
         col("NOME").alias("nome_motorista"),
@@ -144,7 +174,7 @@ def process_dimensions():
     merge_dimension(df_dim_motorista, "Dim_Motorista", "id_motorista_origem")
 
     # Dim_Veiculo
-    df_veiculos_silver = load_silver_table("veiculos")
+    df_veiculos_silver = load_silver_table("carro")
     df_dim_veiculo = df_veiculos_silver.select(
         col("ID_VEICULO").alias("id_veiculo_origem"),
         col("PLACA").alias("placa"),
@@ -158,7 +188,7 @@ def process_dimensions():
     merge_dimension(df_dim_veiculo, "Dim_Veiculo", "id_veiculo_origem")
 
     # Dim_Tipo_Carga
-    df_cargas_silver = load_silver_table("tipos_carga")
+    df_cargas_silver = load_silver_table("tipo_carga")
     df_dim_carga = df_cargas_silver.select(
         col("ID_TIPO_CARGA").alias("id_tipo_carga_origem"),
         col("NOME_TIPO").alias("nome_tipo"),
@@ -169,7 +199,7 @@ def process_dimensions():
     merge_dimension(df_dim_carga, "Dim_Tipo_Carga", "id_tipo_carga_origem")
 
     # Dim_Rota
-    df_rotas_silver = load_silver_table("rotas")
+    df_rotas_silver = load_silver_table("rota")
     df_dim_rota = df_rotas_silver.select(
         col("ID_ROTA").alias("id_rota_origem"),
         col("NOME_ROTA").alias("nome_rota"),
@@ -197,7 +227,7 @@ def process_facts():
 
     # Fato_Entregas
     logging.info("Processando Fato_Entregas.")
-    fato_entregas_silver = load_silver_table("entregas")
+    fato_entregas_silver = load_silver_table("entrega")
     fato_entregas = fato_entregas_silver \
         .join(dim_veiculo, fato_entregas_silver.ID_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
         .join(dim_motorista, fato_entregas_silver.ID_MOTORISTA == dim_motorista.id_motorista_origem, "left") \
@@ -227,7 +257,7 @@ def process_facts():
 
     # Fato_Coletas
     logging.info("Processando Fato_Coletas.")
-    fato_coletas_silver = load_silver_table("coletas")
+    fato_coletas_silver = load_silver_table("coleta")
     fato_entregas_gold = spark.read.format("delta").load(get_gold_path("Fato_Entregas"))
     
     # A FK em Fato_Coletas aponta para a dimensão degenerada em Fato_Entregas
@@ -247,7 +277,7 @@ def process_facts():
 
     # Fato_Manutencoes
     logging.info("Processando Fato_Manutencoes.")
-    fato_manutencoes_silver = load_silver_table("manutencoes")
+    fato_manutencoes_silver = load_silver_table("manutencao")
     fato_manutencoes = fato_manutencoes_silver \
         .join(dim_veiculo, fato_manutencoes_silver.ID_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
         .join(dim_data, to_date(fato_manutencoes_silver.DATA_MANUTENCAO) == dim_data.data_completa, "left") \
@@ -264,7 +294,7 @@ def process_facts():
 
     # Fato_Abastecimentos
     logging.info("Processando Fato_Abastecimentos.")
-    fato_abastecimentos_silver = load_silver_table("abastecimentos")
+    fato_abastecimentos_silver = load_silver_table("abastecimento")
     fato_abastecimentos = fato_abastecimentos_silver \
         .join(dim_veiculo, fato_abastecimentos_silver.ID_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
         .join(dim_data, to_date(fato_abastecimentos_silver.DATA_ABASTECIMENTO) == dim_data.data_completa, "left") \
@@ -280,7 +310,7 @@ def process_facts():
 
     # Fato_Multas
     logging.info("Processando Fato_Multas.")
-    fato_multas_silver = load_silver_table("multas")
+    fato_multas_silver = load_silver_table("apolice")
     fato_multas = fato_multas_silver \
         .join(dim_veiculo, fato_multas_silver.ID_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
         .join(dim_motorista, fato_multas_silver.ID_MOTORISTA == dim_motorista.id_motorista_origem, "left") \
@@ -352,6 +382,7 @@ def process_kpis_and_metrics():
 
 if __name__ == "__main__":
     try:
+        create_container_if_not_exists(ACCOUNT_NAME, GOLD_CONTAINER_NAME, SAS_TOKEN)
         process_dimensions()
         process_facts()
         process_kpis_and_metrics()
