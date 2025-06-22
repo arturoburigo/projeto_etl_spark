@@ -285,7 +285,7 @@ def process_facts():
     dim_veiculo = spark.read.format("delta").load(get_gold_path("Dim_Veiculo")).withColumn("id_veiculo_key", monotonically_increasing_id())
     dim_motorista = spark.read.format("delta").load(get_gold_path("Dim_Motorista")).withColumn("id_motorista_key", monotonically_increasing_id())
     dim_cliente = spark.read.format("delta").load(get_gold_path("Dim_Cliente")).withColumn("id_cliente_key", monotonically_increasing_id())
-    dim_rota = spark.read.format("delta").load(get_gold_path("Dim_Rota")).withColumn("id_rota_key", monotonically_increasing_id())
+    dim_rota = spark.read.format("delta").load(get_gold_path("Dim_Rota"))
     dim_tipo_carga = spark.read.format("delta").load(get_gold_path("Dim_Tipo_Carga")).withColumn("id_tipo_carga_key", monotonically_increasing_id())
     dim_data = spark.read.format("delta").load(get_gold_path("Dim_Data"))
 
@@ -308,7 +308,6 @@ def process_facts():
             col("id_motorista_key"),
             col("rem.id_cliente_key").alias("id_cliente_remetente_key"),
             col("dest.id_cliente_key").alias("id_cliente_destinatario_key"),
-            col("id_rota_key"),
             col("id_tipo_carga_key"),
             col("d_ini.data_key").alias("data_inicio_entrega_key"),
             col("d_prev.data_key").alias("data_previsao_fim_entrega_key"),
@@ -316,7 +315,14 @@ def process_facts():
             col("IDENTIFICADOR_ENTREGA").alias("id_entrega_degenerada"),
             col("STATUS_ENTREGA").alias("status_entrega"),
             col("VALOR_FRETE").alias("valor_frete"),
-            col("PESO_CARGA_KG").alias("peso_carga_kg")
+            col("PESO_CARGA_KG").alias("peso_carga_kg"),
+            # Adicionando chaves naturais para joins robustos nos KPIs
+            col("IDENTIFICADOR_VEICULO").alias("id_veiculo_origem"),
+            col("IDENTIFICADOR_MOTORISTA").alias("id_motorista_origem"),
+            col("IDENTIFICADOR_CLIENTE_REMETENTE").alias("id_cliente_remetente_origem"),
+            col("IDENTIFICADOR_CLIENTE_DESTINATARIO").alias("id_cliente_destinatario_origem"),
+            col("IDENTIFICADOR_ROTA").alias("id_rota_origem"),
+            col("IDENTIFICADOR_TIPO_CARGA").alias("id_tipo_carga_origem")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
     save_gold_table(fato_entregas, "Fato_Entregas")
 
@@ -338,22 +344,33 @@ def process_facts():
             col("OBSERVACOES").alias("observacoes"),
             lit(1).alias("quantidade_coletas")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
-    save_gold_table(fato_coletas, "Fato_Coletas")
-
-    # Fato_Manutencoes
+    save_gold_table(fato_coletas, "Fato_Coletas")    # Fato_Rotas
+    logging.info("Processando Fato_Rotas.")
+    rotas_df = load_silver_table("rotas")
+    fato_rotas = rotas_df.alias("r").join(dim_rota.alias("dr"), col("r.IDENTIFICADOR_ROTA") == col("dr.id_rota_origem"), "left") \
+        .select(
+            col("dr.id_rota_origem").alias("id_rota_key"),
+            col("r.IDENTIFICADOR_ROTA").alias("id_rota_origem"),
+            col("r.DISTANCIA_KM").alias("distancia_km"),
+            col("r.TEMPO_ESTIMADO_HORAS").alias("tempo_estimado_horas")
+        ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
+    save_gold_table(fato_rotas, "Fato_Rotas")    # Fato_Manutencoes
     logging.info("Processando Fato_Manutencoes.")
     fato_manutencoes_silver = load_silver_table("manutencoes")
     fato_manutencoes = fato_manutencoes_silver \
-        .join(dim_veiculo, fato_manutencoes_silver.IDENTIFICADOR_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
-        .join(dim_data, to_date(fato_manutencoes_silver.DATA_MANUTENCAO) == dim_data.data_completa, "left") \
+        .join(dim_veiculo, col("IDENTIFICADOR_VEICULO") == dim_veiculo.id_veiculo_origem, "left") \
+        .join(dim_data.alias("d_manut"), to_date(col("DATA_MANUTENCAO")) == col("d_manut.data_completa"), "left") \
         .select(
             col("id_veiculo_key"),
-            col("data_key").alias("data_manutencao_key"),
+            col("d_manut.data_key").alias("data_manutencao_key"),
             col("IDENTIFICADOR_MANUTENCAO").alias("id_manutencao_degenerada"),
             col("TIPO_MANUTENCAO").alias("tipo_manutencao"),
             col("DESCRICAO_SERVICO").alias("descricao_servico"),
             col("CUSTO_MANUTENCAO").alias("custo_manutencao"),
-            col("TEMPO_PARADO_HORAS").alias("tempo_parado_horas")
+            col("TEMPO_PARADO_HORAS").alias("tempo_parado_horas"),
+            # Adicionando chaves naturais
+            col("IDENTIFICADOR_VEICULO").alias("id_veiculo_origem"),
+            col("IDENTIFICADOR_MANUTENCAO").alias("id_manutencao_origem")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
     save_gold_table(fato_manutencoes, "Fato_Manutencoes")
 
@@ -361,15 +378,17 @@ def process_facts():
     logging.info("Processando Fato_Abastecimentos.")
     fato_abastecimentos_silver = load_silver_table("abastecimentos")
     fato_abastecimentos = fato_abastecimentos_silver \
-        .join(dim_veiculo, fato_abastecimentos_silver.IDENTIFICADOR_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
-        .join(dim_data, to_date(fato_abastecimentos_silver.DATA_ABASTECIMENTO) == dim_data.data_completa, "left") \
+        .join(dim_veiculo, col("IDENTIFICADOR_VEICULO") == dim_veiculo.id_veiculo_origem, "left") \
+        .join(dim_data.alias("d_abast"), to_date(col("DATA_ABASTECIMENTO")) == col("d_abast.data_completa"), "left") \
         .select(
             col("id_veiculo_key"),
-            col("data_key").alias("data_abastecimento_key"),
+            col("d_abast.data_key").alias("data_abastecimento_key"),
             col("IDENTIFICADOR_ABASTECIMENTO").alias("id_abastecimento_degenerada"),
             col("TIPO_COMBUSTIVEL").alias("tipo_combustivel"),
             col("LITROS").alias("litros"),
-            col("VALOR_TOTAL").alias("valor_total")
+            col("VALOR_TOTAL").alias("valor_total"),
+            # Adicionando chaves naturais
+            col("IDENTIFICADOR_VEICULO").alias("id_veiculo_origem")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
     save_gold_table(fato_abastecimentos, "Fato_Abastecimentos")
 
@@ -377,24 +396,26 @@ def process_facts():
     logging.info("Processando Fato_Multas.")
     fato_multas_silver = load_silver_table("multas")
     fato_multas = fato_multas_silver \
-        .join(dim_veiculo, fato_multas_silver.IDENTIFICADOR_VEICULO == dim_veiculo.id_veiculo_origem, "left") \
-        .join(dim_motorista, fato_multas_silver.IDENTIFICADOR_MOTORISTA == dim_motorista.id_motorista_origem, "left") \
-        .join(dim_data, to_date(fato_multas_silver.DATA_MULTA) == dim_data.data_completa, "left") \
+        .join(dim_veiculo, col("IDENTIFICADOR_VEICULO") == dim_veiculo.id_veiculo_origem, "left") \
+        .join(dim_motorista, col("IDENTIFICADOR_MOTORISTA") == dim_motorista.id_motorista_origem, "left") \
+        .join(dim_data.alias("d_multa"), to_date(col("DATA_MULTA")) == col("d_multa.data_completa"), "left") \
         .select(
             col("id_veiculo_key"),
             col("id_motorista_key"),
-            col("data_key").alias("data_multa_key"),
+            col("d_multa.data_key").alias("data_multa_key"),
             col("IDENTIFICADOR_MULTA").alias("id_multa_degenerada"),
             col("LOCAL_MULTA").alias("local_multa"),
             col("DESCRICAO_INFRACAO").alias("descricao_infracao"),
             col("STATUS_PAGAMENTO").alias("status_pagamento"),
-            col("VALOR_MULTA").alias("valor_multa")
+            col("VALOR_MULTA").alias("valor_multa"),
+            # Adicionando chaves naturais
+            col("IDENTIFICADOR_VEICULO").alias("id_veiculo_origem"),
+            col("IDENTIFICADOR_MOTORISTA").alias("id_motorista_origem")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
     save_gold_table(fato_multas, "Fato_Multas")
 
     logging.info("Processamento de todas as tabelas Fato concluído.")
 
-# --- KPIs e Métricas ---
 def process_kpis_and_metrics():
     logging.info("Calculando KPIs e Métricas.")
     fato_entregas = spark.read.format("delta").load(get_gold_path("Fato_Entregas"))
@@ -410,35 +431,35 @@ def process_kpis_and_metrics():
 
     # KPI 2: Custo Médio de Frete por Rota
     dim_rota = spark.read.format("delta").load(get_gold_path("Dim_Rota"))
-    kpi_custo_rota = fato_entregas.join(dim_rota, "id_rota_origem") \
-        .groupBy("nome_rota", "origem", "destino") \
+    kpi_custo_rota = fato_entregas.join(dim_rota, fato_entregas["id_rota_origem"] == dim_rota["id_rota_origem"], "left") \
+        .groupBy(dim_rota["nome_rota"], dim_rota["origem"], dim_rota["destino"]) \
         .agg(avg("valor_frete").alias("custo_medio_frete"))
     save_gold_table(kpi_custo_rota, "kpi_custo_medio_frete_por_rota")
 
     # KPI 3: Total de Entregas por Tipo de Veículo
     dim_veiculo = spark.read.format("delta").load(get_gold_path("Dim_Veiculo"))
-    kpi_entregas_veiculo = fato_entregas.join(dim_veiculo, "id_veiculo_key") \
-        .groupBy("tipo_veiculo") \
+    kpi_entregas_veiculo = fato_entregas.join(dim_veiculo, fato_entregas["id_veiculo_origem"] == dim_veiculo["id_veiculo_origem"], "left") \
+        .groupBy(dim_veiculo["tipo_veiculo"]) \
         .agg(count("*").alias("total_entregas"))
     save_gold_table(kpi_entregas_veiculo, "kpi_total_entregas_por_tipo_veiculo")
 
     # KPI 4: Valor Total de Frete por Cliente
     dim_cliente = spark.read.format("delta").load(get_gold_path("Dim_Cliente"))
-    kpi_valor_cliente = fato_entregas.join(dim_cliente, fato_entregas.id_cliente_remetente_key == dim_cliente.id_cliente_key) \
-        .groupBy("nome_cliente") \
+    kpi_valor_cliente = fato_entregas.join(dim_cliente, fato_entregas["id_cliente_remetente_origem"] == dim_cliente["id_cliente_origem"], "left") \
+        .groupBy(dim_cliente["nome_cliente"]) \
         .agg(sum("valor_frete").alias("valor_total_frete"))
     save_gold_table(kpi_valor_cliente, "kpi_valor_total_frete_por_cliente")
 
     # Métrica 1: Total de Entregas Mensal
-    metrica_entregas_mes = fato_entregas.join(dim_data, fato_entregas.data_inicio_entrega_key == dim_data.data_key) \
-        .groupBy("ano", "mes") \
+    metrica_entregas_mes = fato_entregas.join(dim_data, fato_entregas["data_inicio_entrega_key"] == dim_data["data_key"], "left") \
+        .groupBy(dim_data["ano"], dim_data["mes"]) \
         .agg(count("*").alias("total_entregas")) \
         .orderBy("ano", "mes")
     save_gold_table(metrica_entregas_mes, "metrica_total_entregas_mensal")
 
     # Métrica 2: Peso Total Transportado por Mês
-    metrica_peso_mes = fato_entregas.join(dim_data, fato_entregas.data_inicio_entrega_key == dim_data.data_key) \
-        .groupBy("ano", "mes") \
+    metrica_peso_mes = fato_entregas.join(dim_data, fato_entregas["data_inicio_entrega_key"] == dim_data["data_key"], "left") \
+        .groupBy(dim_data["ano"], dim_data["mes"]) \
         .agg(sum("peso_carga_kg").alias("peso_total_kg")) \
         .orderBy("ano", "mes")
     save_gold_table(metrica_peso_mes, "metrica_peso_total_transportado_mensal")
@@ -449,7 +470,7 @@ if __name__ == "__main__":
     try:
         # create_container_if_not_exists(ACCOUNT_NAME, GOLD_CONTAINER_NAME, SAS_TOKEN)
         # process_dimensions()
-        # process_facts()
+        process_facts()
         process_kpis_and_metrics()
         logging.info("Pipeline GOLD dimensional executado com sucesso!")
     except Exception as e:
