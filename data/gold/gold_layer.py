@@ -468,8 +468,8 @@ def process_kpis_and_metrics():
 
 if __name__ == "__main__":
     try:
-        # create_container_if_not_exists(ACCOUNT_NAME, GOLD_CONTAINER_NAME, SAS_TOKEN)
-        # process_dimensions()
+        create_container_if_not_exists(ACCOUNT_NAME, GOLD_CONTAINER_NAME, SAS_TOKEN)
+        process_dimensions()
         process_facts()
         process_kpis_and_metrics()
         logging.info("Pipeline GOLD dimensional executado com sucesso!")
