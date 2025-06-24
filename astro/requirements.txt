@@ -14,3 +14,12 @@ azure-storage-blob
 delta-spark==2.3.0
 pyarrow>=10.0.0
 findspark
+# Additional dependencies for Azure and data processing
+azure-storage-common
+azure-storage-file-share
+# Additional dependencies for SQL Server connectivity
+pymssql
+# Additional dependencies for data processing and validation
+numpy
+# Additional dependencies for date/time processing
+python-dateutil
