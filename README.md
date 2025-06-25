@@ -11,7 +11,7 @@
 
 **Pipeline ETL Moderno para Processamento de Dados em Larga Escala**
 
-[📖 Documentação Completa](https://seu-dominio.github.io/projeto_etl_spark/) • [🚀 Início Rápido](#-início-rápido) • [🏗️ Arquitetura](#️-arquitetura)
+[📖 Documentação Completa](https://arturoburigo.github.io/projeto_etl_spark/) • [🚀 Início Rápido](#-início-rápido) • [🏗️ Arquitetura](#️-arquitetura)
 
 </div>
 
@@ -104,7 +104,7 @@ O projeto simula um sistema de **logística e transporte**, processando dados de
 Apache Spark 3.x
 </td>
 <td align="center">
-<img src="https://airflow.apache.org/docs/apache-airflow/stable/_images/pin_large.png" width="60"/><br/>
+<img src="https://upload.wikimedia.org/wikipedia/commons/d/de/AirflowLogo.png" width="60"/><br/>
 Apache Airflow 2.x
 </td>
 <td align="center">
@@ -118,7 +118,7 @@ Docker & Compose
 </tr>
 <tr>
 <td align="center">
-<img src="https://delta.io/static/images/delta-lake-logo.png" width="60"/><br/>
+<img src="https://upload.wikimedia.org/wikipedia/commons/2/2e/Delta_Lake_logo.png" width="60"/><br/>
 Delta Lake
 </td>
 <td align="center">
