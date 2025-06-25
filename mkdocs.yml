@@ -1,11 +1,164 @@
-site_name: Projeto ETL com Spark
+site_name: Projeto ETL com Apache Spark & Azure Data Lake
+site_description: Pipeline ETL moderno para processamento de dados em larga escala usando Apache Spark, Airflow e Azure Data Lake
+site_author: Equipe de Data Engineering
+site_url: https://seu-dominio.github.io/projeto_etl_spark/
+
+# Repository
+repo_name: projeto_etl_spark
+repo_url: https://github.com/seu-usuario/projeto_etl_spark
+edit_uri: edit/main/docs/
+
+# Configuration
 theme:
   name: material
+  language: pt
+  
+  # Color scheme
+  palette:
+    - scheme: default
+      primary: blue
+      accent: orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  
+  # Features
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
+    - content.tabs.link
+  
+  # Icons
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+  
+  # Logo
+  logo: assets/logo.png
+  favicon: assets/favicon.ico
 
+# Plugins
+plugins:
+  - search:
+      lang: pt
+  - mermaid2:
+      arguments:
+        theme: base
+        themeVariables:
+          primaryColor: '#1976d2'
+          primaryTextColor: '#ffffff'
+  - git-revision-date-localized:
+      type: date
+      locale: pt
+  - minify:
+      minify_html: true
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: seu-usuario
+      repo: projeto_etl_spark
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Navigation
 nav:
-  - Início: index.md
-  - Instalação: instalacao.md
-  - Como Usar: uso.md
-  - Estrutura do Projeto: estrutura_projeto.md
-  - Airflow e Orquestração: airflow.md
-  - Pipeline ETL: pipeline_etl.md
+  - 🏠 Início: index.md
+  - 📚 Documentação:
+    - 🚀 Início Rápido: inicio_rapido.md
+    - 🛠️ Instalação: instalacao.md
+    - ⚙️ Configuração: configuracao.md
+    - 🔐 Variáveis de Ambiente: env_example.md
+    - 🏗️ Arquitetura: arquitetura.md
+  - 🔧 Pipeline ETL:
+    - 📊 Visão Geral: pipeline_etl.md
+    - 🥉 Camada Bronze: camada_bronze.md
+    - 🥈 Camada Silver: camada_silver.md
+    - 🥇 Camada Gold: camada_gold.md
+    - 📈 KPIs e Métricas: kpis_metricas.md
+    - ⚡ Otimização Spark: otimizacao_spark.md
+  - 🎛️ Orquestração:
+    - Apache Airflow: airflow.md
+    - 📋 DAGs: dags.md
+    - 🔍 Monitoramento: monitoramento.md
+  - 🧪 Desenvolvimento:
+    - 🏗️ Estrutura do Projeto: estrutura_projeto.md
+    - 🧪 Testes: testes.md
+    - 📝 Como Usar: uso.md
+    - 🤝 Contribuição: contribuicao.md
+  - 🚀 Deploy:
+    - ☁️ Azure: deploy_azure.md
+    - 🐳 Docker: deploy_docker.md
+    - 🏗️ Terraform: terraform.md
+  - 📖 Referência:
+    - 🔧 API: api_reference.md
+    - 📊 Schemas: schemas.md
+    - ❓ FAQ: faq.md
+    - 🆘 Troubleshooting: troubleshooting.md
+
+# Extra
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/arturoburigo
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/in/arturoburigo/
+  
+  version:
+    provider: mike
+    default: latest
+
+# Copyright
+copyright: Copyright &copy; 2025 Equipe de Data Engineering

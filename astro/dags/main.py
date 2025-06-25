@@ -331,7 +331,7 @@ def airflow_pipeline():
             """
             Aplica transformações de qualidade de dados:
             - Remove duplicatas
-            - Conversões de tipo
+            - Converte tipos
             - Limpeza de strings
             - Converte strings para maiúsculas
             """
@@ -664,6 +664,14 @@ def airflow_pipeline():
         """
         load_dotenv()
         
+        # Configurar logs do Spark para reduzir verbosidade
+        import logging
+        logging.getLogger("py4j").setLevel(logging.WARNING)
+        logging.getLogger("pyspark").setLevel(logging.WARNING)
+        logging.getLogger("org.apache.spark").setLevel(logging.WARNING)
+        logging.getLogger("org.apache.hadoop").setLevel(logging.WARNING)
+        logging.getLogger("org.apache.ivy").setLevel(logging.WARNING)
+        
         # Variáveis de ambiente
         account_name = os.getenv("ADLS_ACCOUNT_NAME")
         silver_container = os.getenv("ADLS_SILVER_CONTAINER_NAME")
@@ -766,6 +774,7 @@ def airflow_pipeline():
             return f"wasbs://{gold_container}@{account_name}.blob.core.windows.net/{table_name}"
 
         def load_silver_table(table_name):
+            start_time = datetime.now()
             latest_folder_name = find_latest_silver_path(table_name)
             
             if not latest_folder_name:
@@ -777,7 +786,11 @@ def airflow_pipeline():
             path = get_silver_path(latest_folder_name)
             logger.info(f"Lendo tabela da camada Silver: {table_name} (pasta: {latest_folder_name}) de {path}")
             try:
-                return spark.read.format("delta").load(path)
+                df = spark.read.format("delta").load(path)
+                end_time = datetime.now()
+                load_time = (end_time - start_time).total_seconds()
+                logger.info(f"Tabela {table_name} carregada em {load_time:.2f}s com {df.count()} registros")
+                return df
             except Exception as e:
                 if 'Path does not exist' in str(e):
                     logger.error(f"ERRO: A tabela de origem '{table_name}' (pasta: {latest_folder_name}) não foi encontrada no caminho: {path}")
@@ -788,15 +801,20 @@ def airflow_pipeline():
                     raise e
 
         def save_gold_table(df, table_name):
+            start_time = datetime.now()
             path = get_gold_path(table_name)
             logger.info(f"Salvando tabela na camada Gold: {table_name} em {path}")
             df.write.format("delta").mode("overwrite").option("overwriteSchema", "true").save(path)
+            end_time = datetime.now()
+            save_time = (end_time - start_time).total_seconds()
+            logger.info(f"Tabela {table_name} salva em {save_time:.2f}s")
 
         def merge_dimension(df_updates, table_name, merge_key):
             """
             Executa um merge (SCD Tipo 1) em uma tabela de dimensão.
             Cria a tabela se ela não existir.
             """
+            start_time = datetime.now()
             gold_path = get_gold_path(table_name)
             logger.info(f"Executando merge para a dimensão: {table_name}")
 
@@ -815,7 +833,10 @@ def airflow_pipeline():
                     .whenMatchedUpdateAll() \
                     .whenNotMatchedInsertAll() \
                     .execute()
-            logger.info(f"Merge para a dimensão {table_name} concluído.")
+            
+            end_time = datetime.now()
+            merge_time = (end_time - start_time).total_seconds()
+            logger.info(f"Merge para a dimensão {table_name} concluído em {merge_time:.2f}s")
 
         # --- Processamento das Dimensões ---
 
@@ -845,10 +866,19 @@ def airflow_pipeline():
             logger.info("Dim_Data processada com sucesso.")
 
         def process_dimensions():
-            logger.info("Iniciando processamento das dimensões.")
+            logger.info("=== INICIANDO PROCESSAMENTO DAS DIMENSÕES ===")
+            start_time_dimensions = datetime.now()
+            
+            # Dim_Data
+            logger.info("=== PROCESSANDO Dim_Data ===")
+            dim_data_start = datetime.now()
             process_dim_data()
+            dim_data_end = datetime.now()
+            logger.info(f"Dim_Data processada em: {(dim_data_end - dim_data_start).total_seconds():.2f} segundos")
 
             # Dim_Cliente
+            logger.info("=== PROCESSANDO Dim_Cliente ===")
+            dim_cliente_start = datetime.now()
             df_clientes_silver = load_silver_table("clientes")
             df_dim_cliente = df_clientes_silver.select(
                 col("IDENTIFICADOR_CLIENTE").alias("id_cliente_origem"),
@@ -864,8 +894,12 @@ def airflow_pipeline():
                 col("DATA_CADASTRO").alias("data_cadastro")
             )
             merge_dimension(df_dim_cliente, "Dim_Cliente", "id_cliente_origem")
+            dim_cliente_end = datetime.now()
+            logger.info(f"Dim_Cliente processada em: {(dim_cliente_end - dim_cliente_start).total_seconds():.2f} segundos")
 
             # Dim_Motorista
+            logger.info("=== PROCESSANDO Dim_Motorista ===")
+            dim_motorista_start = datetime.now()
             df_motoristas_silver = load_silver_table("motoristas")
             df_dim_motorista = df_motoristas_silver.select(
                 col("IDENTIFICADOR_MOTORISTA").alias("id_motorista_origem"),
@@ -879,8 +913,12 @@ def airflow_pipeline():
                 col("DATA_CONTRATACAO").alias("data_contratacao")
             )
             merge_dimension(df_dim_motorista, "Dim_Motorista", "id_motorista_origem")
+            dim_motorista_end = datetime.now()
+            logger.info(f"Dim_Motorista processada em: {(dim_motorista_end - dim_motorista_start).total_seconds():.2f} segundos")
 
             # Dim_Veiculo
+            logger.info("=== PROCESSANDO Dim_Veiculo ===")
+            dim_veiculo_start = datetime.now()
             df_veiculos_silver = load_silver_table("veiculos")
             df_dim_veiculo = df_veiculos_silver.select(
                 col("IDENTIFICADOR_VEICULO").alias("id_veiculo_origem"),
@@ -893,8 +931,12 @@ def airflow_pipeline():
                 col("STATUS_OPERACIONAL").alias("status_operacional")
             )
             merge_dimension(df_dim_veiculo, "Dim_Veiculo", "id_veiculo_origem")
+            dim_veiculo_end = datetime.now()
+            logger.info(f"Dim_Veiculo processada em: {(dim_veiculo_end - dim_veiculo_start).total_seconds():.2f} segundos")
 
             # Dim_Tipo_Carga
+            logger.info("=== PROCESSANDO Dim_Tipo_Carga ===")
+            dim_carga_start = datetime.now()
             df_cargas_silver = load_silver_table("tipos_carga")
             df_dim_carga = df_cargas_silver.select(
                 col("IDENTIFICADOR_TIPO_CARGA").alias("id_tipo_carga_origem"),
@@ -904,8 +946,12 @@ def airflow_pipeline():
                 col("PESO_MEDIO_KG").alias("peso_medio_kg")
             )
             merge_dimension(df_dim_carga, "Dim_Tipo_Carga", "id_tipo_carga_origem")
+            dim_carga_end = datetime.now()
+            logger.info(f"Dim_Tipo_Carga processada em: {(dim_carga_end - dim_carga_start).total_seconds():.2f} segundos")
 
             # Dim_Rota
+            logger.info("=== PROCESSANDO Dim_Rota ===")
+            dim_rota_start = datetime.now()
             df_rotas_silver = load_silver_table("rotas")
             df_dim_rota = df_rotas_silver.select(
                 col("IDENTIFICADOR_ROTA").alias("id_rota_origem"),
@@ -916,24 +962,43 @@ def airflow_pipeline():
                 col("TEMPO_ESTIMADO_HORAS").alias("tempo_estimado_horas")
             )
             merge_dimension(df_dim_rota, "Dim_Rota", "id_rota_origem")
+            dim_rota_end = datetime.now()
+            logger.info(f"Dim_Rota processada em: {(dim_rota_end - dim_rota_start).total_seconds():.2f} segundos")
 
-            logger.info("Processamento de todas as dimensões concluído.")
+            end_time_dimensions = datetime.now()
+            total_dimensions_time = (end_time_dimensions - start_time_dimensions).total_seconds()
+            
+            logger.info("=== RESUMO DE TEMPOS - DIMENSÕES ===")
+            logger.info(f"Dim_Data: {(dim_data_end - dim_data_start).total_seconds():.2f}s")
+            logger.info(f"Dim_Cliente: {(dim_cliente_end - dim_cliente_start).total_seconds():.2f}s")
+            logger.info(f"Dim_Motorista: {(dim_motorista_end - dim_motorista_start).total_seconds():.2f}s")
+            logger.info(f"Dim_Veiculo: {(dim_veiculo_end - dim_veiculo_start).total_seconds():.2f}s")
+            logger.info(f"Dim_Tipo_Carga: {(dim_carga_end - dim_carga_start).total_seconds():.2f}s")
+            logger.info(f"Dim_Rota: {(dim_rota_end - dim_rota_start).total_seconds():.2f}s")
+            logger.info(f"Tempo total Dimensões: {total_dimensions_time:.2f}s")
+            logger.info("=== FIM DO PROCESSAMENTO DAS DIMENSÕES ===")
 
         # --- Processamento das Fatos ---
 
         def process_facts():
-            logger.info("Iniciando processamento das tabelas Fato.")
-
+            logger.info("=== INICIANDO PROCESSAMENTO DAS TABELAS FATO ===")
+            start_time_facts = datetime.now()
+            
             # Carregar dimensões para lookup
+            logger.info("Carregando dimensões para lookup...")
+            load_dims_start = datetime.now()
             dim_veiculo = spark.read.format("delta").load(get_gold_path("Dim_Veiculo")).withColumn("id_veiculo_key", monotonically_increasing_id())
             dim_motorista = spark.read.format("delta").load(get_gold_path("Dim_Motorista")).withColumn("id_motorista_key", monotonically_increasing_id())
             dim_cliente = spark.read.format("delta").load(get_gold_path("Dim_Cliente")).withColumn("id_cliente_key", monotonically_increasing_id())
             dim_rota = spark.read.format("delta").load(get_gold_path("Dim_Rota"))
             dim_tipo_carga = spark.read.format("delta").load(get_gold_path("Dim_Tipo_Carga")).withColumn("id_tipo_carga_key", monotonically_increasing_id())
             dim_data = spark.read.format("delta").load(get_gold_path("Dim_Data"))
+            load_dims_end = datetime.now()
+            logger.info(f"Dimensões carregadas em: {(load_dims_end - load_dims_start).total_seconds():.2f} segundos")
 
             # Fato_Entregas
-            logger.info("Processando Fato_Entregas.")
+            logger.info("=== PROCESSANDO Fato_Entregas ===")
+            fato_entregas_start = datetime.now()
             fato_entregas_silver = load_silver_table("entregas")
             # Use col("NOME_COLUNA") para acessar colunas, não atributo direto
             fato_entregas = fato_entregas_silver \
@@ -968,9 +1033,12 @@ def airflow_pipeline():
                     col("IDENTIFICADOR_TIPO_CARGA").alias("id_tipo_carga_origem")
                 ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
             save_gold_table(fato_entregas, "Fato_Entregas")
+            fato_entregas_end = datetime.now()
+            logger.info(f"Fato_Entregas processada em: {(fato_entregas_end - fato_entregas_start).total_seconds():.2f} segundos")
 
             # Fato_Coletas
-            logger.info("Processando Fato_Coletas.")
+            logger.info("=== PROCESSANDO Fato_Coletas ===")
+            fato_coletas_start = datetime.now()
             fato_coletas_silver = load_silver_table("coletas")
             fato_entregas_gold = spark.read.format("delta").load(get_gold_path("Fato_Entregas"))
             
@@ -984,11 +1052,15 @@ def airflow_pipeline():
                     col("IDENTIFICADOR_COLETA").alias("id_coleta_degenerada"),
                     col("STATUS_COLETA").alias("status_coleta"),
                     col("ENDERECO_COLETA").alias("endereco_coleta"),
-                    col("OBSERVACOES").alias("observacoes"),
                     lit(1).alias("quantidade_coletas")
                 ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
-            save_gold_table(fato_coletas, "Fato_Coletas")    # Fato_Rotas
-            logger.info("Processando Fato_Rotas.")
+            save_gold_table(fato_coletas, "Fato_Coletas")
+            fato_coletas_end = datetime.now()
+            logger.info(f"Fato_Coletas processada em: {(fato_coletas_end - fato_coletas_start).total_seconds():.2f} segundos")
+
+            # Fato_Rotas
+            logger.info("=== PROCESSANDO Fato_Rotas ===")
+            fato_rotas_start = datetime.now()
             rotas_df = load_silver_table("rotas")
             fato_rotas = rotas_df.alias("r").join(dim_rota.alias("dr"), col("r.IDENTIFICADOR_ROTA") == col("dr.id_rota_origem"), "left") \
                 .select(
@@ -997,8 +1069,13 @@ def airflow_pipeline():
                     col("r.DISTANCIA_KM").alias("distancia_km"),
                     col("r.TEMPO_ESTIMADO_HORAS").alias("tempo_estimado_horas")
                 ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
-            save_gold_table(fato_rotas, "Fato_Rotas")    # Fato_Manutencoes
-            logger.info("Processando Fato_Manutencoes.")
+            save_gold_table(fato_rotas, "Fato_Rotas")
+            fato_rotas_end = datetime.now()
+            logger.info(f"Fato_Rotas processada em: {(fato_rotas_end - fato_rotas_start).total_seconds():.2f} segundos")
+
+            # Fato_Manutencoes
+            logger.info("=== PROCESSANDO Fato_Manutencoes ===")
+            fato_manutencoes_start = datetime.now()
             fato_manutencoes_silver = load_silver_table("manutencoes")
             fato_manutencoes = fato_manutencoes_silver \
                 .join(dim_veiculo, col("IDENTIFICADOR_VEICULO") == dim_veiculo.id_veiculo_origem, "left") \
@@ -1016,9 +1093,12 @@ def airflow_pipeline():
                     col("IDENTIFICADOR_MANUTENCAO").alias("id_manutencao_origem")
                 ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
             save_gold_table(fato_manutencoes, "Fato_Manutencoes")
+            fato_manutencoes_end = datetime.now()
+            logger.info(f"Fato_Manutencoes processada em: {(fato_manutencoes_end - fato_manutencoes_start).total_seconds():.2f} segundos")
 
             # Fato_Abastecimentos
-            logger.info("Processando Fato_Abastecimentos.")
+            logger.info("=== PROCESSANDO Fato_Abastecimentos ===")
+            fato_abastecimentos_start = datetime.now()
             fato_abastecimentos_silver = load_silver_table("abastecimentos")
             fato_abastecimentos = fato_abastecimentos_silver \
                 .join(dim_veiculo, col("IDENTIFICADOR_VEICULO") == dim_veiculo.id_veiculo_origem, "left") \
@@ -1034,9 +1114,12 @@ def airflow_pipeline():
                     col("IDENTIFICADOR_VEICULO").alias("id_veiculo_origem")
                 ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
             save_gold_table(fato_abastecimentos, "Fato_Abastecimentos")
+            fato_abastecimentos_end = datetime.now()
+            logger.info(f"Fato_Abastecimentos processada em: {(fato_abastecimentos_end - fato_abastecimentos_start).total_seconds():.2f} segundos")
 
             # Fato_Multas
-            logger.info("Processando Fato_Multas.")
+            logger.info("=== PROCESSANDO Fato_Multas ===")
+            fato_multas_start = datetime.now()
             fato_multas_silver = load_silver_table("multas")
             fato_multas = fato_multas_silver \
                 .join(dim_veiculo, col("IDENTIFICADOR_VEICULO") == dim_veiculo.id_veiculo_origem, "left") \
@@ -1056,65 +1139,153 @@ def airflow_pipeline():
                     col("IDENTIFICADOR_MOTORISTA").alias("id_motorista_origem")
                 ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
             save_gold_table(fato_multas, "Fato_Multas")
+            fato_multas_end = datetime.now()
+            logger.info(f"Fato_Multas processada em: {(fato_multas_end - fato_multas_start).total_seconds():.2f} segundos")
 
-            logger.info("Processamento de todas as tabelas Fato concluído.")
+            end_time_facts = datetime.now()
+            total_facts_time = (end_time_facts - start_time_facts).total_seconds()
+            
+            logger.info("=== RESUMO DE TEMPOS - TABELAS FATO ===")
+            logger.info(f"Carregamento de dimensões: {(load_dims_end - load_dims_start).total_seconds():.2f}s")
+            logger.info(f"Fato_Entregas: {(fato_entregas_end - fato_entregas_start).total_seconds():.2f}s")
+            logger.info(f"Fato_Coletas: {(fato_coletas_end - fato_coletas_start).total_seconds():.2f}s")
+            logger.info(f"Fato_Rotas: {(fato_rotas_end - fato_rotas_start).total_seconds():.2f}s")
+            logger.info(f"Fato_Manutencoes: {(fato_manutencoes_end - fato_manutencoes_start).total_seconds():.2f}s")
+            logger.info(f"Fato_Abastecimentos: {(fato_abastecimentos_end - fato_abastecimentos_start).total_seconds():.2f}s")
+            logger.info(f"Fato_Multas: {(fato_multas_end - fato_multas_start).total_seconds():.2f}s")
+            logger.info(f"Tempo total Tabelas Fato: {total_facts_time:.2f}s")
+            logger.info("=== FIM DO PROCESSAMENTO DAS TABELAS FATO ===")
 
         def process_kpis_and_metrics():
-            logger.info("Calculando KPIs e Métricas.")
+            logger.info("=== INICIANDO CÁLCULO DE KPIs E MÉTRICAS ===")
+            start_time_total = datetime.now()
+            
+            # Carregar tabelas necessárias
+            logger.info("Carregando tabelas para cálculo de KPIs...")
+            load_start = datetime.now()
             fato_entregas = spark.read.format("delta").load(get_gold_path("Fato_Entregas"))
             dim_data = spark.read.format("delta").load(get_gold_path("Dim_Data"))
+            dim_rota = spark.read.format("delta").load(get_gold_path("Dim_Rota"))
+            dim_veiculo = spark.read.format("delta").load(get_gold_path("Dim_Veiculo"))
+            dim_cliente = spark.read.format("delta").load(get_gold_path("Dim_Cliente"))
+            load_end = datetime.now()
+            logger.info(f"Tabelas carregadas em: {(load_end - load_start).total_seconds():.2f} segundos")
 
             # KPI 1: Percentual de Entregas no Prazo (On-Time Delivery)
+            logger.info("=== CALCULANDO KPI 1: Percentual de Entregas no Prazo ===")
+            kpi1_start = datetime.now()
             kpi_otd = fato_entregas.withColumn("on_time",
                 (col("data_fim_real_entrega_key") <= col("data_previsao_fim_entrega_key")) | (col("data_previsao_fim_entrega_key").isNull())
             ).agg(
                 (sum(when(col("on_time") == True, 1).otherwise(0)) / count("*") * 100).alias("percentual_entregas_no_prazo")
             )
             save_gold_table(kpi_otd, "kpi_percentual_entregas_no_prazo")
+            kpi1_end = datetime.now()
+            logger.info(f"KPI 1 concluído em: {(kpi1_end - kpi1_start).total_seconds():.2f} segundos")
 
             # KPI 2: Custo Médio de Frete por Rota
-            dim_rota = spark.read.format("delta").load(get_gold_path("Dim_Rota"))
+            logger.info("=== CALCULANDO KPI 2: Custo Médio de Frete por Rota ===")
+            kpi2_start = datetime.now()
             kpi_custo_rota = fato_entregas.join(dim_rota, fato_entregas["id_rota_origem"] == dim_rota["id_rota_origem"], "left") \
                 .groupBy(dim_rota["nome_rota"], dim_rota["origem"], dim_rota["destino"]) \
                 .agg(avg("valor_frete").alias("custo_medio_frete"))
             save_gold_table(kpi_custo_rota, "kpi_custo_medio_frete_por_rota")
+            kpi2_end = datetime.now()
+            logger.info(f"KPI 2 concluído em: {(kpi2_end - kpi2_start).total_seconds():.2f} segundos")
 
             # KPI 3: Total de Entregas por Tipo de Veículo
-            dim_veiculo = spark.read.format("delta").load(get_gold_path("Dim_Veiculo"))
+            logger.info("=== CALCULANDO KPI 3: Total de Entregas por Tipo de Veículo ===")
+            kpi3_start = datetime.now()
             kpi_entregas_veiculo = fato_entregas.join(dim_veiculo, fato_entregas["id_veiculo_origem"] == dim_veiculo["id_veiculo_origem"], "left") \
                 .groupBy(dim_veiculo["tipo_veiculo"]) \
                 .agg(count("*").alias("total_entregas"))
             save_gold_table(kpi_entregas_veiculo, "kpi_total_entregas_por_tipo_veiculo")
+            kpi3_end = datetime.now()
+            logger.info(f"KPI 3 concluído em: {(kpi3_end - kpi3_start).total_seconds():.2f} segundos")
 
             # KPI 4: Valor Total de Frete por Cliente
-            dim_cliente = spark.read.format("delta").load(get_gold_path("Dim_Cliente"))
+            logger.info("=== CALCULANDO KPI 4: Valor Total de Frete por Cliente ===")
+            kpi4_start = datetime.now()
             kpi_valor_cliente = fato_entregas.join(dim_cliente, fato_entregas["id_cliente_remetente_origem"] == dim_cliente["id_cliente_origem"], "left") \
                 .groupBy(dim_cliente["nome_cliente"]) \
                 .agg(sum("valor_frete").alias("valor_total_frete"))
             save_gold_table(kpi_valor_cliente, "kpi_valor_total_frete_por_cliente")
+            kpi4_end = datetime.now()
+            logger.info(f"KPI 4 concluído em: {(kpi4_end - kpi4_start).total_seconds():.2f} segundos")
 
             # Métrica 1: Total de Entregas Mensal
+            logger.info("=== CALCULANDO MÉTRICA 1: Total de Entregas Mensal ===")
+            metrica1_start = datetime.now()
             metrica_entregas_mes = fato_entregas.join(dim_data, fato_entregas["data_inicio_entrega_key"] == dim_data["data_key"], "left") \
                 .groupBy(dim_data["ano"], dim_data["mes"]) \
                 .agg(count("*").alias("total_entregas")) \
                 .orderBy("ano", "mes")
             save_gold_table(metrica_entregas_mes, "metrica_total_entregas_mensal")
+            metrica1_end = datetime.now()
+            logger.info(f"Métrica 1 concluída em: {(metrica1_end - metrica1_start).total_seconds():.2f} segundos")
 
             # Métrica 2: Peso Total Transportado por Mês
+            logger.info("=== CALCULANDO MÉTRICA 2: Peso Total Transportado por Mês ===")
+            metrica2_start = datetime.now()
             metrica_peso_mes = fato_entregas.join(dim_data, fato_entregas["data_inicio_entrega_key"] == dim_data["data_key"], "left") \
                 .groupBy(dim_data["ano"], dim_data["mes"]) \
                 .agg(sum("peso_carga_kg").alias("peso_total_kg")) \
                 .orderBy("ano", "mes")
             save_gold_table(metrica_peso_mes, "metrica_peso_total_transportado_mensal")
+            metrica2_end = datetime.now()
+            logger.info(f"Métrica 2 concluída em: {(metrica2_end - metrica2_start).total_seconds():.2f} segundos")
 
-            logger.info("Cálculo de KPIs e Métricas concluído.")
+            end_time_total = datetime.now()
+            total_time = (end_time_total - start_time_total).total_seconds()
+            
+            logger.info("=== RESUMO DE TEMPOS - KPIs E MÉTRICAS ===")
+            logger.info(f"Carregamento de tabelas: {(load_end - load_start).total_seconds():.2f}s")
+            logger.info(f"KPI 1 (Percentual Entregas no Prazo): {(kpi1_end - kpi1_start).total_seconds():.2f}s")
+            logger.info(f"KPI 2 (Custo Médio por Rota): {(kpi2_end - kpi2_start).total_seconds():.2f}s")
+            logger.info(f"KPI 3 (Entregas por Tipo Veículo): {(kpi3_end - kpi3_start).total_seconds():.2f}s")
+            logger.info(f"KPI 4 (Valor Total por Cliente): {(kpi4_end - kpi4_start).total_seconds():.2f}s")
+            logger.info(f"Métrica 1 (Entregas Mensal): {(metrica1_end - metrica1_start).total_seconds():.2f}s")
+            logger.info(f"Métrica 2 (Peso Mensal): {(metrica2_end - metrica2_start).total_seconds():.2f}s")
+            logger.info(f"Tempo total KPIs e Métricas: {total_time:.2f}s")
+            logger.info("=== FIM DO CÁLCULO DE KPIs E MÉTRICAS ===")
 
         try:
+            logger.info("=== INICIANDO PIPELINE GOLD DIMENSIONAL ===")
+            start_time_gold_total = datetime.now()
+            
             create_container_if_not_exists(account_name, gold_container, sas_token)
+            
+            # Processamento das Dimensões
+            start_time_dimensions = datetime.now()
             process_dimensions()
+            end_time_dimensions = datetime.now()
+            dimensions_time = (end_time_dimensions - start_time_dimensions).total_seconds()
+            logger.info(f"=== TEMPO TOTAL DIMENSÕES: {dimensions_time:.2f}s ===")
+            
+            # Processamento das Tabelas Fato
+            start_time_facts = datetime.now()
             process_facts()
+            end_time_facts = datetime.now()
+            facts_time = (end_time_facts - start_time_facts).total_seconds()
+            logger.info(f"=== TEMPO TOTAL TABELAS FATO: {facts_time:.2f}s ===")
+            
+            # Processamento de KPIs e Métricas
+            start_time_kpis = datetime.now()
             process_kpis_and_metrics()
-            logger.info("Pipeline GOLD dimensional executado com sucesso!")
+            end_time_kpis = datetime.now()
+            kpis_time = (end_time_kpis - start_time_kpis).total_seconds()
+            logger.info(f"=== TEMPO TOTAL KPIs E MÉTRICAS: {kpis_time:.2f}s ===")
+            
+            end_time_gold_total = datetime.now()
+            total_gold_time = (end_time_gold_total - start_time_gold_total).total_seconds()
+            
+            logger.info("=== RESUMO FINAL - PIPELINE GOLD ===")
+            logger.info(f"Dimensões: {dimensions_time:.2f}s ({(dimensions_time/total_gold_time)*100:.1f}%)")
+            logger.info(f"Tabelas Fato: {facts_time:.2f}s ({(facts_time/total_gold_time)*100:.1f}%)")
+            logger.info(f"KPIs e Métricas: {kpis_time:.2f}s ({(kpis_time/total_gold_time)*100:.1f}%)")
+            logger.info(f"Tempo Total Pipeline Gold: {total_gold_time:.2f}s")
+            logger.info("=== PIPELINE GOLD DIMENSIONAL EXECUTADO COM SUCESSO! ===")
+            
         except Exception as e:
             logger.error(f"Erro na execução do pipeline GOLD: {e}", exc_info=True)
             raise e
