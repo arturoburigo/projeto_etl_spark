@@ -29,6 +29,11 @@ env.bak/
 venv.bak/
 .python-version
 
+# Documentation generated files
+site/
+docs/_build/
+docs/.doctrees/
+
 # Terraform
 .terraform/
 *.tfstate
