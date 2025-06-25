@@ -189,10 +189,6 @@ class SQLServerSetup:
         
         # Configurar schema padrão
         self.set_default_schema()
-        
-        # Criar tabela de exemplo
-        self.create_sample_table()
-        
         # Testar conexão
         if not self.test_connection():
             return False

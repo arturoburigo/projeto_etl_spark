@@ -29,7 +29,6 @@
 - [🔧 Configuração](#-configuração)
 - [📊 Pipeline de Dados](#-pipeline-de-dados)
 - [🧪 Testes](#-testes)
-- [📈 Monitoramento](#-monitoramento)
 - [🤝 Contribuição](#-contribuição)
 - [👥 Equipe](#-equipe)
 - [📄 Licença](#-licença)
@@ -66,57 +65,9 @@ O projeto simula um sistema de **logística e transporte**, processando dados de
 
 ## 🏗️ Arquitetura
 
-```mermaid
-graph TB
-    subgraph "Fonte de Dados"
-        SQL[SQL Server<br/>Base Transacional]
-    end
-    
-    subgraph "Orquestração"
-        AF[Apache Airflow<br/>Scheduler & DAGs]
-    end
-    
-    subgraph "Azure Data Lake - Medallion Architecture"
-        LZ[Landing Zone<br/>Dados Brutos CSV]
-        BR[Bronze Layer<br/>Delta Tables]
-        SV[Silver Layer<br/>Dados Limpos]
-        GD[Gold Layer<br/>Modelo Dimensional]
-    end
-    
-    subgraph "Processamento"
-        SP[Apache Spark<br/>Distributed Processing]
-        DL[Delta Lake<br/>ACID Transactions]
-    end
-    
-    subgraph "Analytics"
-        BI[Power BI / Tableau<br/>Dashboards]
-        KPI[KPIs & Métricas<br/>Business Intelligence]
-    end
-    
-    SQL -->|Extract| AF
-    AF -->|Orchestrate| LZ
-    LZ -->|Spark ETL| BR
-    BR -->|Transform| SV
-    SV -->|Aggregate| GD
-    SP -.->|Process| BR
-    SP -.->|Process| SV
-    SP -.->|Process| GD
-    DL -.->|ACID| BR
-    DL -.->|ACID| SV
-    DL -.->|ACID| GD
-    GD -->|Consume| BI
-    GD -->|Metrics| KPI
-```
-
----
+![image](docs/assets/pipeline.jpeg)
 
 ## ⚡ Funcionalidades
-
-### 🔄 Pipeline ETL Completo
-- **Extração incremental** do SQL Server
-- **Processamento distribuído** com Spark
-- **Transformações de qualidade** de dados
-- **Modelo dimensional** para analytics
 
 ### 📊 Camadas de Dados (Medallion)
 - **🥉 Bronze**: Dados brutos em formato Delta
@@ -198,24 +149,59 @@ Certifique-se de ter instalado:
 - ☁️ [Azure CLI](https://learn.microsoft.com/pt-br/cli/azure/install-azure-cli)
 - 📦 [Poetry](https://python-poetry.org/docs/#installation)
 
-### ⚡ Instalação em 3 Passos
+### Instalaçã0
 
+1. Clone o repositório
+   ```bash
+   git clone https://github.com/arturoburigo/projeto_etl_spark
+   ```
+
+2. **Inicie o Docker**:
 ```bash
-# 1. Clone o repositório
-git clone https://github.com/seu-usuario/projeto_etl_spark.git
-cd projeto_etl_spark
-
-# 2. Instale as dependências
-poetry install
-
-# 3. Configure as variáveis de ambiente
-cp .env.example .env
-# Edite o arquivo .env com suas credenciais
+docker run --platform linux/amd64 -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=satc@2025" -p 1433:1433 --name etl_entregas -d mcr.microsoft.com/mssql/server:2022-latest
 ```
+
+3. **Rode os scripts de populacao de dados**:
+```bash
+    poetry run data/create_schema_and_columns.py
+    poetry run data/create_tables.py
+    poetry run data/faker_data.py
+
+```
+
+4. Com sua conta Microsoft/Azure criada e apta para uso dos recursos pagos, no <a href="https://portal.azure.com/">```Portal Azure```</a> crie um workspace seguindo a <a href="https://learn.microsoft.com/en-us/azure/databricks/getting-started/">```documentação```</a> fornecida pela Microsoft. Durante a execução deste processo, você irá criar um ```resource group```. Salve o nome informado no ```resource group``` pois ele será utilizado logo em seguida.
+3. Com o ```Terraform``` instalado e o ```resource group``` em mãos, no arquivo <a href="https://github.com/arturoburigo/projeto_etl_spark/blob/iac/variables.tf">```/iac/variables.tf```</a> modifique a seguinte váriavel adicionando o ```resource group``` que você criou previamente.
+
+![image](docs/assets/terraform_var.png)
+
+4. Nesta etapa, iremos iniciar o deploy do nosso ambiente cloud. Após alterar a variável no último passo, acesse a pasta ```/iac``` e execute os seguintes comandos:
+   ```bash
+   terraform init
+   ```
+
+   ```bash
+   terraform apply
+   ```
+5. Com a execução dos comandos finalizada, verifique no <a href="https://portal.azure.com/">```Portal Azure```</a> o ```MS SQL Server```, ```MS SQL Database``` e o ```ADLS Gen2``` contendo os containers ```landing-zone```, ```bronze```, ```silver``` e ```gold``` que foram criados no passo anterior. 
+
+6. No <a href="https://portal.azure.com/">```Portal Azure```</a>, gere um ```SAS TOKEN``` para o contêiner ```landing-zone``` seguindo esta <a href="https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers#create-sas-tokens-in-the-azure-portal">```documentação```</a>. Guarde este token em um local seguro pois ele será utilizado no próximo passo. 
+
+7. crie um arquivo .env no diretorio raiz e na pasta astro
+
+8. No mesmo diretório, vamos iniciar o processo de população do nosso banco de dados. Verifique corretamente o preenchimento das váriaveis no arquivo ```.env``` e prossiga com os seguintes comandos:
+   1. Iniciar ```venv``` (ambiente virtual) do poetry:
+        ```bash
+        poetry env activate
+        ```
+   2. Instalar as dependencias`:
+        ```bash
+        poetry install
+        ```
 
 ### 🔧 Configuração Rápida
 
 1. **Configure o Azure**:
+
 ```bash
 az login
 # Configure suas credenciais no arquivo .env
@@ -229,7 +215,6 @@ astro dev start
 
 3. **Acesse a interface**:
 - 🌐 Airflow UI: [http://localhost:8080](http://localhost:8080)
-- 👤 Usuário: `admin` / Senha: `admin`
 
 4. **Execute o pipeline**:
 - Navegue até a DAG `sqlserver_to_bronze_adls`
@@ -380,23 +365,6 @@ poetry run python astro/tests/test_sqlserver_connection.py
 
 ---
 
-## 📈 Monitoramento
-
-### 🎛️ Airflow UI
-
-- **Dashboard**: Visão geral das execuções
-- **Logs detalhados**: Para debug e troubleshooting
-- **Alertas**: Notificações em caso de falhas
-- **Métricas**: Performance e SLA
-
-### 📊 Métricas de Performance
-
-- **Tempo de execução** por task
-- **Volume de dados** processados
-- **Taxa de sucesso** das execuções
-- **Utilização de recursos** (CPU/Memória)
-
----
 
 ## 🤝 Contribuição
 
@@ -408,14 +376,7 @@ Contribuições são sempre bem-vindas! Siga estes passos:
 4. **Push** para a branch (`git push origin feature/AmazingFeature`)
 5. **Abra** um Pull Request
 
-### 📝 Padrões de Código
 
-- Use **Black** para formatação
-- Siga **PEP 8**
-- Adicione **docstrings** nas funções
-- Mantenha **testes atualizados**
-
----
 
 ## 👥 Equipe
 
@@ -426,35 +387,35 @@ Contribuições são sempre bem-vindas! Siga estes passos:
 <img src="https://github.com/arturoburigo.png" width="100px;" alt="Arturo Burigo"/><br />
 <sub><b>Arturo Burigo</b></sub>
 </a><br />
-<sub>Tech Lead & Architecture</sub>
+<sub>Airflow | Terraform | ETL</sub>
 </td>
 <td align="center">
 <a href="https://github.com/bezerraluiz">
 <img src="https://github.com/bezerraluiz.png" width="100px;" alt="Luiz Bezerra"/><br />
 <sub><b>Luiz Bezerra</b></sub>
 </a><br />
-<sub>Data Engineer</sub>
+<sub>Bronze | Gold | BI</sub>
 </td>
 <td align="center">
 <a href="https://github.com/M0rona">
 <img src="https://github.com/M0rona.png" width="100px;" alt="Gabriel Morona"/><br />
 <sub><b>Gabriel Morona</b></sub>
 </a><br />
-<sub>Spark Developer</sub>
+<sub>Silver | BI </sub>
 </td>
 <td align="center">
 <a href="https://github.com/laura27241">
 <img src="https://github.com/laura27241.png" width="100px;" alt="Maria Laura"/><br />
 <sub><b>Maria Laura</b></sub>
 </a><br />
-<sub>Data Analyst</sub>
+<sub>Gold | Docs</sub>
 </td>
 <td align="center">
 <a href="https://github.com/amandadimas">
 <img src="https://github.com/amandadimas.png" width="100px;" alt="Amanda Dimas"/><br />
 <sub><b>Amanda Dimas</b></sub>
 </a><br />
-<sub>QA Engineer</sub>
+<sub>Gold | SQL | Docs</sub>
 </td>
 </tr>
 </table>
@@ -467,13 +428,4 @@ Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](L
 
 ---
 
-<div align="center">
 
-**🌟 Se este projeto foi útil, considere dar uma estrela!**
-
-[![GitHub stars](https://img.shields.io/github/stars/seu-usuario/projeto_etl_spark?style=social)](https://github.com/seu-usuario/projeto_etl_spark/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/seu-usuario/projeto_etl_spark?style=social)](https://github.com/seu-usuario/projeto_etl_spark/network)
-
-**Feito com ❤️ pela equipe de Data Engineering**
-
-</div>
