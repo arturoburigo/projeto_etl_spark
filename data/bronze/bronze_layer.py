@@ -39,17 +39,23 @@ except Exception as e:
     logging.warning(f"Could not create container '{BRONZE_CONTAINER_NAME}'. It might already exist.")
     pass
 
-# Create SparkSession with Delta Lake and Azure configurations
-spark = SparkSession.builder \
-    .appName("bronze_layer") \
-    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
-    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
-    .config("spark.jars.packages", "io.delta:delta-core_2.12:2.3.0,org.apache.hadoop:hadoop-azure:3.3.6,org.apache.hadoop:hadoop-common:3.3.6,com.microsoft.azure:azure-storage:8.6.6") \
-    .getOrCreate()
-
-
 # Function to copy CSV files from landing container to bronze container
-def copy_csvs_to_bronze():
+def copy_csvs_to_bronze(spark=None):
+    """
+    Copy CSV files from landing container to bronze container using Delta format.
+    
+    Args:
+        spark: Optional SparkSession. If None, creates a new one.
+    """
+    # Use provided Spark session or create a new one
+    if spark is None:
+        spark = SparkSession.builder \
+            .appName("bronze_layer") \
+            .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+            .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+            .config("spark.jars.packages", "io.delta:delta-core_2.12:2.3.0,org.apache.hadoop:hadoop-azure:3.3.6,org.apache.hadoop:hadoop-common:3.3.6,com.microsoft.azure:azure-storage:8.6.6") \
+            .getOrCreate()
+    
     # Credentials SAS configured for Spark to access Azure Blob Storage
     spark.conf.set(f"fs.azure.sas.{LANDING_CONTAINER_NAME}.{ACCOUNT_NAME}.blob.core.windows.net", SAS_TOKEN)
     spark.conf.set(f"fs.azure.sas.{BRONZE_CONTAINER_NAME}.{ACCOUNT_NAME}.blob.core.windows.net", SAS_TOKEN)
@@ -84,11 +90,10 @@ def copy_csvs_to_bronze():
         except Exception as e:
             logging.error(f"Failed to process file {blob.name}. Error: {e}")
 
-
     logging.info("All CSV files processed and written to bronze as Delta tables.")
 
 # Execute the main function if the script is run directly
 if __name__ == "__main__":
     copy_csvs_to_bronze()
-    spark.stop()
-    logging.info("Spark session stopped.")
+    # Note: We don't stop the Spark session here as it's managed by the main DAG
+    logging.info("Bronze layer processing completed.")

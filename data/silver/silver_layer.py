@@ -40,15 +40,6 @@ except Exception as e:
     logging.warning(f"Container '{SILVER_CONTAINER_NAME}' já existe ou não foi possível criar.")
     pass
 
-# Cria SparkSession com Delta Lake e configurações do Azure
-spark = SparkSession.builder \
-    .appName("silver_layer") \
-    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
-    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
-    .config("spark.jars.packages", "io.delta:delta-core_2.12:2.3.0,org.apache.hadoop:hadoop-azure:3.3.6,org.apache.hadoop:hadoop-common:3.3.6,com.microsoft.azure:azure-storage:8.6.6") \
-    .getOrCreate()
-
-
 # Dicionário de mapeamento de colunas para o contexto de logística/transporte
 COLUMN_MAPPING = {
     'CD_': 'CODIGO_',
@@ -165,13 +156,6 @@ def standardize_column_names(df, table_name):
             df = df.withColumnRenamed(old_name, new_name)
             logging.info(f"Coluna específica renomeada: {old_name} -> {new_name}")
     
-    # # Remove colunas de metadados da camada bronze se existirem
-    # columns_to_drop = ['DATA_HORA_BRONZE', 'NOME_ARQUIVO', '_INGESTION_TIMESTAMP']
-    # for col_to_drop in columns_to_drop:
-    #     if col_to_drop in df.columns:
-    #         df = df.drop(col_to_drop)
-    #         logging.info(f"Coluna de metadados bronze removida: {col_to_drop}")
-    
     # Adiciona metadados da camada silver
     df = df.withColumn("_SILVER_INGESTION_TIMESTAMP", current_timestamp()) \
            .withColumn("_SOURCE_TABLE", lit(table_name))
@@ -202,7 +186,7 @@ def apply_data_quality_transformations(df, table_name):
         if dict(df.dtypes)[col_name] == "string":
             df = df.withColumn(col_name, upper(col(col_name)))
     
-    # 3.. Converte colunas de string date/timestamp para tipos adequados
+    # 3. Converte colunas de string date/timestamp para tipos adequados
     for col_name, data_type in df.dtypes:
         if data_type == "string":
             # Verifica se a coluna contém datas
@@ -410,10 +394,22 @@ def apply_business_rules(df, table_name):
     return df
 
 
-def process_bronze_to_silver():
+def process_bronze_to_silver(spark=None):
     """
     Função principal que processa todas as tabelas da camada bronze para silver
+    
+    Args:
+        spark: Optional SparkSession. If None, creates a new one.
     """
+    # Use provided Spark session or create a new one
+    if spark is None:
+        spark = SparkSession.builder \
+            .appName("silver_layer") \
+            .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+            .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+            .config("spark.jars.packages", "io.delta:delta-core_2.12:2.3.0,org.apache.hadoop:hadoop-azure:3.3.6,org.apache.hadoop:hadoop-common:3.3.6,com.microsoft.azure:azure-storage:8.6.6") \
+            .getOrCreate()
+    
     # Configura tokens SAS para o Spark
     spark.conf.set(f"fs.azure.sas.{BRONZE_CONTAINER_NAME}.{ACCOUNT_NAME}.blob.core.windows.net", SAS_TOKEN)
     spark.conf.set(f"fs.azure.sas.{SILVER_CONTAINER_NAME}.{ACCOUNT_NAME}.blob.core.windows.net", SAS_TOKEN)
@@ -439,7 +435,8 @@ def process_bronze_to_silver():
             
             # Caminho de origem na camada bronze
             source_path = f"wasbs://{BRONZE_CONTAINER_NAME}@{ACCOUNT_NAME}.blob.core.windows.net/{table_name}"
-              # Lê a tabela Delta da camada bronze
+            
+            # Lê a tabela Delta da camada bronze
             df = spark.read.format("delta").load(source_path)
             logging.info(f"Tabela {table_name} carregada com {df.count()} registros e {len(df.columns)} colunas")
             
@@ -459,7 +456,8 @@ def process_bronze_to_silver():
             
             # Define caminho de destino
             dest_path = f"wasbs://{SILVER_CONTAINER_NAME}@{ACCOUNT_NAME}.blob.core.windows.net/{table_name}"
-              # Mostra alguns registros da tabela silver após as transformações
+            
+            # Mostra alguns registros da tabela silver após as transformações
             logging.info(f"\n=== DADOS DA TABELA SILVER: {table_name} ===")
             df_silver.show(5, truncate=False)
             
@@ -481,12 +479,10 @@ if __name__ == "__main__":
     try:
         # Processa Bronze para Silver
         process_bronze_to_silver()
-         
+        
         logging.info("Pipeline Bronze para Silver executado com sucesso!")
         
     except Exception as e:
         logging.error(f"Erro na execução principal: {str(e)}")
-    finally:
-        # Para a sessão Spark
-        spark.stop()
-        logging.info("Sessão Spark finalizada.")
+        raise
+    # Note: We don't stop the Spark session here as it's managed by the main DAG

@@ -110,10 +110,6 @@ def get_spark_session():
         .config("spark.jars.packages", "io.delta:delta-core_2.12:2.3.0,org.apache.hadoop:hadoop-azure:3.3.6,org.apache.hadoop:hadoop-common:3.3.6") \
         .getOrCreate()
 
-spark = get_spark_session()
-spark.conf.set(f"fs.azure.sas.{SILVER_CONTAINER_NAME}.{ACCOUNT_NAME}.blob.core.windows.net", SAS_TOKEN)
-spark.conf.set(f"fs.azure.sas.{GOLD_CONTAINER_NAME}.{ACCOUNT_NAME}.blob.core.windows.net", SAS_TOKEN)
-
 # --- Funções Auxiliares ---
 
 def get_silver_path(table_name):
@@ -122,7 +118,7 @@ def get_silver_path(table_name):
 def get_gold_path(table_name):
     return f"wasbs://{GOLD_CONTAINER_NAME}@{ACCOUNT_NAME}.blob.core.windows.net/{table_name}"
 
-def load_silver_table(table_name):
+def load_silver_table(spark, table_name):
     latest_folder_name = find_latest_silver_path(table_name)
     
     if not latest_folder_name:
@@ -144,12 +140,12 @@ def load_silver_table(table_name):
             logging.error(f"Erro inesperado ao ler a tabela '{table_name}' (pasta: {latest_folder_name}) da camada Silver.", exc_info=True)
             raise e
 
-def save_gold_table(df, table_name):
+def save_gold_table(spark, df, table_name):
     path = get_gold_path(table_name)
     logging.info(f"Salvando tabela na camada Gold: {table_name} em {path}")
     df.write.format("delta").mode("overwrite").option("overwriteSchema", "true").save(path)
 
-def merge_dimension(df_updates, table_name, merge_key):
+def merge_dimension(spark, df_updates, table_name, merge_key):
     """
     Executa um merge (SCD Tipo 1) em uma tabela de dimensão.
     Cria a tabela se ela não existir.
@@ -176,7 +172,7 @@ def merge_dimension(df_updates, table_name, merge_key):
 
 # --- Processamento das Dimensões ---
 
-def process_dim_data():
+def process_dim_data(spark):
     logging.info("Processando Dim_Data")
     # Criar uma tabela de datas de 2020 a 2030
     df = spark.sql("SELECT sequence(to_date('2020-01-01'), to_date('2030-12-31'), interval 1 day) as dates") \
@@ -198,15 +194,15 @@ def process_dim_data():
     ).withColumn("eh_feriado", lit(False)) \
      .withColumn("feriado_nome", lit(None).cast("string"))
 
-    save_gold_table(dim_data, "Dim_Data")
+    save_gold_table(spark, dim_data, "Dim_Data")
     logging.info("Dim_Data processada com sucesso.")
 
-def process_dimensions():
+def process_dimensions(spark):
     logging.info("Iniciando processamento das dimensões.")
-    process_dim_data()
+    process_dim_data(spark)
 
     # Dim_Cliente
-    df_clientes_silver = load_silver_table("clientes")
+    df_clientes_silver = load_silver_table(spark, "clientes")
     df_dim_cliente = df_clientes_silver.select(
         col("IDENTIFICADOR_CLIENTE").alias("id_cliente_origem"),
         col("NOME_CLIENTE").alias("nome_cliente"),
@@ -220,10 +216,10 @@ def process_dimensions():
         col("CEP").alias("cep"),
         col("DATA_CADASTRO").alias("data_cadastro")
     )
-    merge_dimension(df_dim_cliente, "Dim_Cliente", "id_cliente_origem")
+    merge_dimension(spark, df_dim_cliente, "Dim_Cliente", "id_cliente_origem")
 
     # Dim_Motorista
-    df_motoristas_silver = load_silver_table("motoristas")
+    df_motoristas_silver = load_silver_table(spark, "motoristas")
     df_dim_motorista = df_motoristas_silver.select(
         col("IDENTIFICADOR_MOTORISTA").alias("id_motorista_origem"),
         col("NOME_MOTORISTA").alias("nome_motorista"),
@@ -235,10 +231,10 @@ def process_dimensions():
         col("STATUS_ATIVO").alias("status_ativo"),
         col("DATA_CONTRATACAO").alias("data_contratacao")
     )
-    merge_dimension(df_dim_motorista, "Dim_Motorista", "id_motorista_origem")
+    merge_dimension(spark, df_dim_motorista, "Dim_Motorista", "id_motorista_origem")
 
     # Dim_Veiculo
-    df_veiculos_silver = load_silver_table("veiculos")
+    df_veiculos_silver = load_silver_table(spark, "veiculos")
     df_dim_veiculo = df_veiculos_silver.select(
         col("IDENTIFICADOR_VEICULO").alias("id_veiculo_origem"),
         col("PLACA").alias("placa"),
@@ -249,10 +245,10 @@ def process_dimensions():
         col("TIPO_VEICULO").alias("tipo_veiculo"),
         col("STATUS_OPERACIONAL").alias("status_operacional")
     )
-    merge_dimension(df_dim_veiculo, "Dim_Veiculo", "id_veiculo_origem")
+    merge_dimension(spark, df_dim_veiculo, "Dim_Veiculo", "id_veiculo_origem")
 
     # Dim_Tipo_Carga
-    df_cargas_silver = load_silver_table("tipos_carga")
+    df_cargas_silver = load_silver_table(spark, "tipos_carga")
     df_dim_carga = df_cargas_silver.select(
         col("IDENTIFICADOR_TIPO_CARGA").alias("id_tipo_carga_origem"),
         col("NOME_TIPO").alias("nome_tipo"),
@@ -260,10 +256,10 @@ def process_dimensions():
         col("REQUER_REFRIGERACAO").alias("requer_refrigeracao"),
         col("PESO_MEDIO_KG").alias("peso_medio_kg")
     )
-    merge_dimension(df_dim_carga, "Dim_Tipo_Carga", "id_tipo_carga_origem")
+    merge_dimension(spark, df_dim_carga, "Dim_Tipo_Carga", "id_tipo_carga_origem")
 
     # Dim_Rota
-    df_rotas_silver = load_silver_table("rotas")
+    df_rotas_silver = load_silver_table(spark, "rotas")
     df_dim_rota = df_rotas_silver.select(
         col("IDENTIFICADOR_ROTA").alias("id_rota_origem"),
         col("NOME_ROTA").alias("nome_rota"),
@@ -272,13 +268,13 @@ def process_dimensions():
         col("DISTANCIA_KM").alias("distancia_km"),
         col("TEMPO_ESTIMADO_HORAS").alias("tempo_estimado_horas")
     )
-    merge_dimension(df_dim_rota, "Dim_Rota", "id_rota_origem")
+    merge_dimension(spark, df_dim_rota, "Dim_Rota", "id_rota_origem")
 
     logging.info("Processamento de todas as dimensões concluído.")
 
 # --- Processamento das Fatos ---
 
-def process_facts():
+def process_facts(spark):
     logging.info("Iniciando processamento das tabelas Fato.")
 
     # Carregar dimensões para lookup
@@ -291,7 +287,7 @@ def process_facts():
 
     # Fato_Entregas
     logging.info("Processando Fato_Entregas.")
-    fato_entregas_silver = load_silver_table("entregas")
+    fato_entregas_silver = load_silver_table(spark, "entregas")
     # Use col("NOME_COLUNA") para acessar colunas, não atributo direto
     fato_entregas = fato_entregas_silver \
         .join(dim_veiculo, col("IDENTIFICADOR_VEICULO") == dim_veiculo.id_veiculo_origem, "left") \
@@ -324,11 +320,11 @@ def process_facts():
             col("IDENTIFICADOR_ROTA").alias("id_rota_origem"),
             col("IDENTIFICADOR_TIPO_CARGA").alias("id_tipo_carga_origem")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
-    save_gold_table(fato_entregas, "Fato_Entregas")
+    save_gold_table(spark, fato_entregas, "Fato_Entregas")
 
     # Fato_Coletas
     logging.info("Processando Fato_Coletas.")
-    fato_coletas_silver = load_silver_table("coletas")
+    fato_coletas_silver = load_silver_table(spark, "coletas")
     fato_entregas_gold = spark.read.format("delta").load(get_gold_path("Fato_Entregas"))
     
     # A FK em Fato_Coletas aponta para a dimensão degenerada em Fato_Entregas
@@ -344,9 +340,11 @@ def process_facts():
             col("OBSERVACOES").alias("observacoes"),
             lit(1).alias("quantidade_coletas")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
-    save_gold_table(fato_coletas, "Fato_Coletas")    # Fato_Rotas
+    save_gold_table(spark, fato_coletas, "Fato_Coletas")
+
+    # Fato_Rotas
     logging.info("Processando Fato_Rotas.")
-    rotas_df = load_silver_table("rotas")
+    rotas_df = load_silver_table(spark, "rotas")
     fato_rotas = rotas_df.alias("r").join(dim_rota.alias("dr"), col("r.IDENTIFICADOR_ROTA") == col("dr.id_rota_origem"), "left") \
         .select(
             col("dr.id_rota_origem").alias("id_rota_key"),
@@ -354,9 +352,11 @@ def process_facts():
             col("r.DISTANCIA_KM").alias("distancia_km"),
             col("r.TEMPO_ESTIMADO_HORAS").alias("tempo_estimado_horas")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
-    save_gold_table(fato_rotas, "Fato_Rotas")    # Fato_Manutencoes
+    save_gold_table(spark, fato_rotas, "Fato_Rotas")
+
+    # Fato_Manutencoes
     logging.info("Processando Fato_Manutencoes.")
-    fato_manutencoes_silver = load_silver_table("manutencoes")
+    fato_manutencoes_silver = load_silver_table(spark, "manutencoes")
     fato_manutencoes = fato_manutencoes_silver \
         .join(dim_veiculo, col("IDENTIFICADOR_VEICULO") == dim_veiculo.id_veiculo_origem, "left") \
         .join(dim_data.alias("d_manut"), to_date(col("DATA_MANUTENCAO")) == col("d_manut.data_completa"), "left") \
@@ -372,11 +372,11 @@ def process_facts():
             col("IDENTIFICADOR_VEICULO").alias("id_veiculo_origem"),
             col("IDENTIFICADOR_MANUTENCAO").alias("id_manutencao_origem")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
-    save_gold_table(fato_manutencoes, "Fato_Manutencoes")
+    save_gold_table(spark, fato_manutencoes, "Fato_Manutencoes")
 
     # Fato_Abastecimentos
     logging.info("Processando Fato_Abastecimentos.")
-    fato_abastecimentos_silver = load_silver_table("abastecimentos")
+    fato_abastecimentos_silver = load_silver_table(spark, "abastecimentos")
     fato_abastecimentos = fato_abastecimentos_silver \
         .join(dim_veiculo, col("IDENTIFICADOR_VEICULO") == dim_veiculo.id_veiculo_origem, "left") \
         .join(dim_data.alias("d_abast"), to_date(col("DATA_ABASTECIMENTO")) == col("d_abast.data_completa"), "left") \
@@ -390,11 +390,11 @@ def process_facts():
             # Adicionando chaves naturais
             col("IDENTIFICADOR_VEICULO").alias("id_veiculo_origem")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
-    save_gold_table(fato_abastecimentos, "Fato_Abastecimentos")
+    save_gold_table(spark, fato_abastecimentos, "Fato_Abastecimentos")
 
     # Fato_Multas
     logging.info("Processando Fato_Multas.")
-    fato_multas_silver = load_silver_table("multas")
+    fato_multas_silver = load_silver_table(spark, "multas")
     fato_multas = fato_multas_silver \
         .join(dim_veiculo, col("IDENTIFICADOR_VEICULO") == dim_veiculo.id_veiculo_origem, "left") \
         .join(dim_motorista, col("IDENTIFICADOR_MOTORISTA") == dim_motorista.id_motorista_origem, "left") \
@@ -412,11 +412,11 @@ def process_facts():
             col("IDENTIFICADOR_VEICULO").alias("id_veiculo_origem"),
             col("IDENTIFICADOR_MOTORISTA").alias("id_motorista_origem")
         ).withColumn("_GOLD_INGESTION_TIMESTAMP", current_timestamp())
-    save_gold_table(fato_multas, "Fato_Multas")
+    save_gold_table(spark, fato_multas, "Fato_Multas")
 
     logging.info("Processamento de todas as tabelas Fato concluído.")
 
-def process_kpis_and_metrics():
+def process_kpis_and_metrics(spark):
     logging.info("Calculando KPIs e Métricas.")
     fato_entregas = spark.read.format("delta").load(get_gold_path("Fato_Entregas"))
     dim_data = spark.read.format("delta").load(get_gold_path("Dim_Data"))
@@ -427,55 +427,73 @@ def process_kpis_and_metrics():
     ).agg(
         (sum(when(col("on_time") == True, 1).otherwise(0)) / count("*") * 100).alias("percentual_entregas_no_prazo")
     )
-    save_gold_table(kpi_otd, "kpi_percentual_entregas_no_prazo")
+    save_gold_table(spark, kpi_otd, "kpi_percentual_entregas_no_prazo")
 
     # KPI 2: Custo Médio de Frete por Rota
     dim_rota = spark.read.format("delta").load(get_gold_path("Dim_Rota"))
     kpi_custo_rota = fato_entregas.join(dim_rota, fato_entregas["id_rota_origem"] == dim_rota["id_rota_origem"], "left") \
         .groupBy(dim_rota["nome_rota"], dim_rota["origem"], dim_rota["destino"]) \
         .agg(avg("valor_frete").alias("custo_medio_frete"))
-    save_gold_table(kpi_custo_rota, "kpi_custo_medio_frete_por_rota")
+    save_gold_table(spark, kpi_custo_rota, "kpi_custo_medio_frete_por_rota")
 
     # KPI 3: Total de Entregas por Tipo de Veículo
     dim_veiculo = spark.read.format("delta").load(get_gold_path("Dim_Veiculo"))
     kpi_entregas_veiculo = fato_entregas.join(dim_veiculo, fato_entregas["id_veiculo_origem"] == dim_veiculo["id_veiculo_origem"], "left") \
         .groupBy(dim_veiculo["tipo_veiculo"]) \
         .agg(count("*").alias("total_entregas"))
-    save_gold_table(kpi_entregas_veiculo, "kpi_total_entregas_por_tipo_veiculo")
+    save_gold_table(spark, kpi_entregas_veiculo, "kpi_total_entregas_por_tipo_veiculo")
 
     # KPI 4: Valor Total de Frete por Cliente
     dim_cliente = spark.read.format("delta").load(get_gold_path("Dim_Cliente"))
     kpi_valor_cliente = fato_entregas.join(dim_cliente, fato_entregas["id_cliente_remetente_origem"] == dim_cliente["id_cliente_origem"], "left") \
         .groupBy(dim_cliente["nome_cliente"]) \
         .agg(sum("valor_frete").alias("valor_total_frete"))
-    save_gold_table(kpi_valor_cliente, "kpi_valor_total_frete_por_cliente")
+    save_gold_table(spark, kpi_valor_cliente, "kpi_valor_total_frete_por_cliente")
 
     # Métrica 1: Total de Entregas Mensal
     metrica_entregas_mes = fato_entregas.join(dim_data, fato_entregas["data_inicio_entrega_key"] == dim_data["data_key"], "left") \
         .groupBy(dim_data["ano"], dim_data["mes"]) \
         .agg(count("*").alias("total_entregas")) \
         .orderBy("ano", "mes")
-    save_gold_table(metrica_entregas_mes, "metrica_total_entregas_mensal")
+    save_gold_table(spark, metrica_entregas_mes, "metrica_total_entregas_mensal")
 
     # Métrica 2: Peso Total Transportado por Mês
     metrica_peso_mes = fato_entregas.join(dim_data, fato_entregas["data_inicio_entrega_key"] == dim_data["data_key"], "left") \
         .groupBy(dim_data["ano"], dim_data["mes"]) \
         .agg(sum("peso_carga_kg").alias("peso_total_kg")) \
         .orderBy("ano", "mes")
-    save_gold_table(metrica_peso_mes, "metrica_peso_total_transportado_mensal")
+    save_gold_table(spark, metrica_peso_mes, "metrica_peso_total_transportado_mensal")
 
     logging.info("Cálculo de KPIs e Métricas concluído.")
 
-if __name__ == "__main__":
+def run_gold_pipeline(spark=None):
+    """
+    Main function to run the entire gold layer pipeline.
+    
+    Args:
+        spark: Optional SparkSession. If None, creates a new one.
+    """
+    # Use provided Spark session or create a new one
+    if spark is None:
+        spark = get_spark_session()
+        spark.conf.set(f"fs.azure.sas.{SILVER_CONTAINER_NAME}.{ACCOUNT_NAME}.blob.core.windows.net", SAS_TOKEN)
+        spark.conf.set(f"fs.azure.sas.{GOLD_CONTAINER_NAME}.{ACCOUNT_NAME}.blob.core.windows.net", SAS_TOKEN)
+    
     try:
         create_container_if_not_exists(ACCOUNT_NAME, GOLD_CONTAINER_NAME, SAS_TOKEN)
-        process_dimensions()
-        process_facts()
-        process_kpis_and_metrics()
+        process_dimensions(spark)
+        process_facts(spark)
+        process_kpis_and_metrics(spark)
         logging.info("Pipeline GOLD dimensional executado com sucesso!")
     except Exception as e:
         logging.error(f"Erro na execução do pipeline GOLD: {e}", exc_info=True)
         raise e
-    finally:
-        spark.stop()
-        logging.info("Sessão Spark finalizada.")
+
+if __name__ == "__main__":
+    try:
+        run_gold_pipeline()
+        logging.info("Pipeline GOLD dimensional executado com sucesso!")
+    except Exception as e:
+        logging.error(f"Erro na execução do pipeline GOLD: {e}", exc_info=True)
+        raise e
+    # Note: We don't stop the Spark session here as it's managed by the main DAG

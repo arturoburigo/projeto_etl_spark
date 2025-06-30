@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script para criar tabelas do sistema de entregas
-Cria todas as tabelas necessárias no schema configurado
+Script to create delivery system tables
+Creates all necessary tables in the configured schema
 """
 
 import os
@@ -11,7 +11,7 @@ from typing import List, Dict
 
 class TableCreator:
     def __init__(self):
-        """Inicializa configuração do SQL Server com variáveis de ambiente"""
+        """Initialize SQL Server configuration with environment variables"""
         self.server = os.getenv('DB_SERVER', 'localhost')
         self.port = os.getenv('DB_PORT', '1433')
         self.username = os.getenv('DB_USERNAME', 'sa')
@@ -19,7 +19,7 @@ class TableCreator:
         self.database = os.getenv('DB_DATABASE', 'etl_entregas_db')
         self.schema = os.getenv('DB_SCHEMA', 'entregas')
         
-        # String de conexão para o database
+        # Connection string for database
         self.db_conn_str = (
             f"DRIVER={{ODBC Driver 17 for SQL Server}};"
             f"SERVER={self.server},{self.port};"
@@ -30,7 +30,7 @@ class TableCreator:
         )
 
     def get_table_scripts(self) -> List[Dict[str, str]]:
-        """Retorna lista com scripts SQL das tabelas na ordem correta de criação"""
+        """Returns list with SQL scripts for tables in correct creation order"""
         return [
             {
                 "name": "Clientes",
@@ -195,7 +195,7 @@ class TableCreator:
         ]
 
     def table_exists(self, table_name: str) -> bool:
-        """Verifica se a tabela já existe no schema"""
+        """Check if table already exists in schema"""
         try:
             with pyodbc.connect(self.db_conn_str) as conn:
                 cursor = conn.cursor()
@@ -206,37 +206,37 @@ class TableCreator:
                 """, (self.schema, table_name))
                 return cursor.fetchone()[0] > 0
         except Exception as e:
-            print(f"❌ Erro ao verificar tabela {table_name}: {e}")
+            print(f"❌ Error checking table {table_name}: {e}")
             return False
 
     def create_table(self, table_info: Dict[str, str]) -> bool:
-        """Cria uma tabela específica"""
+        """Create a specific table"""
         table_name = table_info["name"]
         table_sql = table_info["sql"]
         
         try:
             if self.table_exists(table_name):
-                print(f"⚠️  Tabela '{table_name}' já existe - pulando")
+                print(f"⚠️  Table '{table_name}' already exists - skipping")
                 return True
             
-            print(f"🔨 Criando tabela '{table_name}'...")
+            print(f"🔨 Creating table '{table_name}'...")
             with pyodbc.connect(self.db_conn_str) as conn:
                 conn.autocommit = True
                 cursor = conn.cursor()
                 cursor.execute(table_sql)
-                print(f"✅ Tabela '{table_name}' criada com sucesso!")
+                print(f"✅ Table '{table_name}' created successfully!")
                 return True
                 
         except Exception as e:
-            print(f"❌ Erro ao criar tabela '{table_name}': {e}")
+            print(f"❌ Error creating table '{table_name}': {e}")
             return False
 
     def drop_all_tables(self) -> bool:
-        """Remove todas as tabelas (em ordem reversa devido às FK)"""
+        """Remove all tables (in reverse order due to FK constraints)"""
         try:
-            print("🗑️  Removendo tabelas existentes...")
+            print("🗑️  Removing existing tables...")
             
-            # Lista das tabelas em ordem reversa (devido às foreign keys)
+            # List of tables in reverse order (due to foreign keys)
             tables_to_drop = [
                 "Multas_Transito", "Abastecimentos", "Manutencoes_Veiculo", 
                 "Coletas", "Entregas", "Rotas", "Tipos_Carga", 
@@ -251,56 +251,56 @@ class TableCreator:
                     try:
                         if self.table_exists(table):
                             cursor.execute(f"DROP TABLE [{self.schema}].[{table}]")
-                            print(f"🗑️  Tabela '{table}' removida")
+                            print(f"🗑️  Table '{table}' removed")
                     except Exception as e:
-                        print(f"⚠️  Erro ao remover tabela '{table}': {e}")
+                        print(f"⚠️  Error removing table '{table}': {e}")
                 
-            print("✅ Limpeza concluída!")
+            print("✅ Cleanup completed!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro na limpeza: {e}")
+            print(f"❌ Error during cleanup: {e}")
             return False
 
     def create_all_tables(self, recreate: bool = False) -> bool:
-        """Cria todas as tabelas do sistema"""
-        print("🏗️  Iniciando criação das tabelas...")
+        """Create all system tables"""
+        print("🏗️  Starting table creation...")
         print(f"📋 Schema: {self.schema}")
         print(f"📋 Database: {self.database}")
         print("-" * 50)
         
-        # Se recreate=True, remove todas as tabelas primeiro
+        # If recreate=True, remove all tables first
         if recreate:
             if not self.drop_all_tables():
                 return False
             print()
         
-        # Obter scripts das tabelas
+        # Get table scripts
         tables = self.get_table_scripts()
         
-        # Criar cada tabela
+        # Create each table
         success_count = 0
         for table_info in tables:
             if self.create_table(table_info):
                 success_count += 1
-            print()  # Linha em branco para separar
+            print()  # Blank line to separate
         
-        # Resumo final
+        # Final summary
         total_tables = len(tables)
         print("=" * 50)
         if success_count == total_tables:
-            print("✅ TODAS AS TABELAS CRIADAS COM SUCESSO!")
-            print(f"📊 {success_count}/{total_tables} tabelas criadas")
+            print("✅ ALL TABLES CREATED SUCCESSFULLY!")
+            print(f"📊 {success_count}/{total_tables} tables created")
             self.show_tables_summary()
             return True
         else:
-            print(f"⚠️  CRIAÇÃO PARCIAL: {success_count}/{total_tables} tabelas criadas")
+            print(f"⚠️  PARTIAL CREATION: {success_count}/{total_tables} tables created")
             return False
 
     def show_tables_summary(self):
-        """Mostra resumo das tabelas criadas"""
+        """Show summary of created tables"""
         try:
-            print("\n📋 RESUMO DAS TABELAS CRIADAS:")
+            print("\n📋 SUMMARY OF CREATED TABLES:")
             print("-" * 50)
             
             with pyodbc.connect(self.db_conn_str) as conn:
@@ -318,71 +318,71 @@ class TableCreator:
                 
                 tables = cursor.fetchall()
                 for i, (table_name, column_count) in enumerate(tables, 1):
-                    print(f"{i:2d}. {table_name:<25} ({column_count} colunas)")
+                    print(f"{i:2d}. {table_name:<25} ({column_count} columns)")
                 
-                print(f"\n✅ Total: {len(tables)} tabelas no schema '{self.schema}'")
+                print(f"\n✅ Total: {len(tables)} tables in schema '{self.schema}'")
                 
         except Exception as e:
-            print(f"❌ Erro ao listar tabelas: {e}")
+            print(f"❌ Error listing tables: {e}")
 
     def test_database_connection(self) -> bool:
-        """Testa a conexão com o banco"""
+        """Test database connection"""
         try:
-            print("🧪 Testando conexão com o banco...")
+            print("🧪 Testing database connection...")
             with pyodbc.connect(self.db_conn_str) as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT DB_NAME(), @@VERSION")
                 result = cursor.fetchone()
-                print(f"✅ Conectado ao database: {result[0]}")
+                print(f"✅ Connected to database: {result[0]}")
                 return True
         except Exception as e:
-            print(f"❌ Erro de conexão: {e}")
+            print(f"❌ Connection error: {e}")
             return False
 
 def main():
-    """Função principal"""
-    print("🏗️  Criador de Tabelas - Sistema de Entregas")
+    """Main function"""
+    print("🏗️  Table Creator - Delivery System")
     print("=" * 50)
     
-    # Verificar argumentos
+    # Check arguments
     recreate = "--recreate" in sys.argv or "-r" in sys.argv
     
     if recreate:
-        print("🔄 Modo RECREATE ativado - tabelas serão removidas e recriadas")
-        response = input("⚠️  Tem certeza? Digite 'sim' para continuar: ")
-        if response.lower() != 'sim':
-            print("❌ Operação cancelada")
+        print("🔄 RECREATE mode activated - tables will be removed and recreated")
+        response = input("⚠️  Are you sure? Type 'yes' to continue: ")
+        if response.lower() != 'yes':
+            print("❌ Operation cancelled")
             sys.exit(0)
         print()
     
-    # Verificar dependências
+    # Check dependencies
     try:
         import pyodbc
     except ImportError:
-        print("❌ pyodbc não está instalado!")
-        print("💡 Execute: pip install pyodbc")
+        print("❌ pyodbc is not installed!")
+        print("💡 Run: pip install pyodbc")
         sys.exit(1)
     
-    # Criar instância e executar
+    # Create instance and execute
     creator = TableCreator()
     
-    # Testar conexão
+    # Test connection
     if not creator.test_database_connection():
-        print("💡 Verifique se:")
-        print("   - O container SQL Server está rodando")
-        print("   - As variáveis de ambiente estão corretas")
-        print("   - O database e schema existem")
+        print("💡 Please check if:")
+        print("   - SQL Server container is running")
+        print("   - Environment variables are correct")
+        print("   - Database and schema exist")
         sys.exit(1)
     
     print()
     
-    # Criar tabelas
+    # Create tables
     if creator.create_all_tables(recreate=recreate):
-        print("\n🎉 Processo concluído com sucesso!")
-        print("💡 Suas tabelas estão prontas para uso!")
+        print("\n🎉 Process completed successfully!")
+        print("💡 Your tables are ready to use!")
         sys.exit(0)
     else:
-        print("\n💥 Falha na criação das tabelas!")
+        print("\n💥 Failed to create tables!")
         sys.exit(1)
 
 if __name__ == "__main__":

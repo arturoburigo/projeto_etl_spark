@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Gerador de dados faker para o sistema de entregas
-Cria 200.000 registros distribuídos logicamente entre as tabelas
+Faker data generator for delivery system
+Creates 200,000 records logically distributed across tables
 """
 
 import os
@@ -12,10 +12,10 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Tuple
 import time
 
-# Simulando Faker com dados brasileiros realistas
+# Simulating Faker with realistic Brazilian data
 class BrazilianFaker:
     def __init__(self):
-        # Nomes brasileiros comuns
+        # Common Brazilian names
         self.first_names = [
             'João', 'Maria', 'José', 'Ana', 'Carlos', 'Francisca', 'Paulo', 'Antônia',
             'Pedro', 'Luiza', 'Manoel', 'Lúcia', 'Francisco', 'Helena', 'Ricardo',
@@ -34,7 +34,7 @@ class BrazilianFaker:
             'Nunes', 'Moreira', 'Correia', 'Castro', 'Pinto', 'Teixeira', 'Ramos'
         ]
         
-        # Cidades brasileiras
+        # Brazilian cities
         self.cities = [
             'São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza',
             'Belo Horizonte', 'Manaus', 'Curitiba', 'Recife', 'Porto Alegre',
@@ -47,14 +47,14 @@ class BrazilianFaker:
             'Caxias do Sul', 'Pelotas', 'Canoas', 'São Vicente', 'Franca'
         ]
         
-        # Estados brasileiros
+        # Brazilian states
         self.states = [
             'SP', 'RJ', 'MG', 'RS', 'PR', 'SC', 'BA', 'GO', 'PE', 'CE',
             'PB', 'ES', 'RN', 'AL', 'MT', 'MS', 'DF', 'SE', 'AM', 'RO',
             'AC', 'AP', 'RR', 'PA', 'TO', 'MA', 'PI'
         ]
         
-        # Modelos de veículos brasileiros
+        # Brazilian vehicle models
         self.vehicle_models = [
             'Sprinter', 'Daily', 'Ducato', 'Master', 'HR', 'Bongo', 'Accelo',
             'Atego', 'Cargo', 'Constellation', 'Axor', 'Actros', 'FH',
@@ -67,12 +67,12 @@ class BrazilianFaker:
             'Scania', 'Hyundai', 'Agrale', 'MAN'
         ]
         
-        # Tipos de carga
+        # Cargo types
         self.cargo_types = [
-            'Eletrônicos', 'Roupas', 'Alimentos', 'Medicamentos', 'Móveis',
-            'Cosméticos', 'Livros', 'Bebidas', 'Produtos de Limpeza', 'Brinquedos',
-            'Ferramentas', 'Autopeças', 'Material de Construção', 'Tecidos',
-            'Produtos Químicos', 'Equipamentos', 'Documentos', 'Calçados'
+            'Electronics', 'Clothing', 'Food', 'Medicines', 'Furniture',
+            'Cosmetics', 'Books', 'Beverages', 'Cleaning Products', 'Toys',
+            'Tools', 'Auto Parts', 'Construction Materials', 'Fabrics',
+            'Chemical Products', 'Equipment', 'Documents', 'Footwear'
         ]
 
     def name(self) -> str:
@@ -80,7 +80,7 @@ class BrazilianFaker:
     
     def company_name(self) -> str:
         suffixes = ['Ltda', 'S/A', 'ME', 'EPP', 'EIRELI']
-        business_types = ['Comércio', 'Indústria', 'Serviços', 'Distribuidora', 'Atacado']
+        business_types = ['Commerce', 'Industry', 'Services', 'Distributor', 'Wholesale']
         return f"{random.choice(self.last_names)} {random.choice(business_types)} {random.choice(suffixes)}"
     
     def cpf(self) -> str:
@@ -98,7 +98,7 @@ class BrazilianFaker:
         return f"({random.randint(11, 99)}) {random.randint(90000, 99999)}-{random.randint(1000, 9999)}"
     
     def address(self) -> str:
-        street_types = ['Rua', 'Av.', 'Praça', 'Alameda', 'Travessa']
+        street_types = ['Street', 'Avenue', 'Square', 'Alley', 'Lane']
         return f"{random.choice(street_types)} {random.choice(self.last_names)}, {random.randint(1, 9999)}"
     
     def city(self) -> str:
@@ -111,12 +111,12 @@ class BrazilianFaker:
         return f"{random.randint(10000, 99999)}-{random.randint(100, 999)}"
     
     def vehicle_plate(self) -> str:
-        # Placas brasileiras antigas e Mercosul
+        # Old Brazilian and Mercosur plates
         if random.choice([True, False]):
-            # Placa antiga
+            # Old plate
             return f"{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}-{random.randint(1000, 9999)}"
         else:
-            # Placa Mercosul
+            # Mercosur plate
             return f"{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}{random.randint(1, 9)}{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}{random.randint(10, 99)}"
     
     def cnh(self) -> str:
@@ -130,7 +130,7 @@ class BrazilianFaker:
 
 class DataGenerator:
     def __init__(self):
-        """Inicializa gerador de dados"""
+        """Initialize data generator"""
         self.server = os.getenv('DB_SERVER', 'localhost')
         self.port = os.getenv('DB_PORT', '1433')
         self.username = os.getenv('DB_USERNAME', 'sa')
@@ -149,27 +149,27 @@ class DataGenerator:
         
         self.faker = BrazilianFaker()
         
-        # Configuração da distribuição de dados (total: 200.000)
+        # Data distribution configuration (total: 200,000)
         self.table_sizes = {
-            'Clientes': 5000,           # 5.000 clientes
-            'Motoristas': 800,          # 800 motoristas  
-            'Veiculos': 1200,           # 1.200 veículos
-            'Tipos_Carga': 50,          # 50 tipos de carga
-            'Rotas': 150,               # 150 rotas
-            'Entregas': 120000,         # 120.000 entregas (principal)
-            'Coletas': 50000,           # 50.000 coletas (nem toda entrega tem coleta)
-            'Manutencoes_Veiculo': 15000, # 15.000 manutenções
-            'Abastecimentos': 7000,     # 7.000 abastecimentos  
-            'Multas_Transito': 800      # 800 multas
+            'Clientes': 5000,           # 5,000 customers
+            'Motoristas': 800,          # 800 drivers  
+            'Veiculos': 1200,           # 1,200 vehicles
+            'Tipos_Carga': 50,          # 50 cargo types
+            'Rotas': 150,               # 150 routes
+            'Entregas': 120000,         # 120,000 deliveries (main)
+            'Coletas': 50000,           # 50,000 pickups (not every delivery has pickup)
+            'Manutencoes_Veiculo': 15000, # 15,000 maintenance records
+            'Abastecimentos': 7000,     # 7,000 fuel records  
+            'Multas_Transito': 800      # 800 traffic tickets
         }
         
-        # IDs gerados para relacionamentos
+        # Generated IDs for relationships
         self.generated_ids = {}
 
     def clear_tables(self) -> bool:
-        """Limpa todas as tabelas na ordem correta"""
+        """Clear all tables in correct order"""
         try:
-            print("🗑️  Limpando dados existentes...")
+            print("🗑️  Clearing existing data...")
             
             tables_order = [
                 "Multas_Transito", "Abastecimentos", "Manutencoes_Veiculo",
@@ -184,19 +184,19 @@ class DataGenerator:
                 for table in tables_order:
                     cursor.execute(f"DELETE FROM [{self.schema}].[{table}]")
                     cursor.execute(f"DBCC CHECKIDENT('[{self.schema}].[{table}]', RESEED, 0)")
-                    print(f"🗑️  Tabela {table} limpa")
+                    print(f"🗑️  Table {table} cleared")
             
-            print("✅ Limpeza concluída!")
+            print("✅ Cleanup completed!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro na limpeza: {e}")
+            print(f"❌ Error during cleanup: {e}")
             return False
 
     def generate_clientes(self) -> bool:
-        """Gera dados para tabela Clientes"""
+        """Generate data for Clientes table"""
         try:
-            print(f"👥 Gerando {self.table_sizes['Clientes']} clientes...")
+            print(f"👥 Generating {self.table_sizes['Clientes']} customers...")
             
             with pyodbc.connect(self.db_conn_str) as conn:
                 cursor = conn.cursor()
@@ -226,25 +226,25 @@ class DataGenerator:
                     
                     if (i + 1) % 1000 == 0:
                         conn.commit()
-                        print(f"   📝 {i + 1} clientes inseridos...")
+                        print(f"   📝 {i + 1} customers inserted...")
                 
                 conn.commit()
                 
-                # Obter IDs gerados
+                # Get generated IDs
                 cursor.execute(f"SELECT id_cliente FROM [{self.schema}].[Clientes]")
                 self.generated_ids['clientes'] = [row[0] for row in cursor.fetchall()]
                 
-            print(f"✅ {self.table_sizes['Clientes']} clientes criados!")
+            print(f"✅ {self.table_sizes['Clientes']} customers created!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao gerar clientes: {e}")
+            print(f"❌ Error generating customers: {e}")
             return False
 
     def generate_motoristas(self) -> bool:
-        """Gera dados para tabela Motoristas"""
+        """Generate data for Motoristas table"""
         try:
-            print(f"🚗 Gerando {self.table_sizes['Motoristas']} motoristas...")
+            print(f"🚗 Generating {self.table_sizes['Motoristas']} drivers...")
             
             with pyodbc.connect(self.db_conn_str) as conn:
                 cursor = conn.cursor()
@@ -259,7 +259,7 @@ class DataGenerator:
                     )
                     telefone = self.faker.phone()
                     email = self.faker.email(nome)
-                    status_ativo = random.choice([1, 1, 1, 0])  # 75% ativos
+                    status_ativo = random.choice([1, 1, 1, 0])  # 75% active
                     data_contratacao = self.faker.date_between(
                         datetime(2015, 1, 1),
                         datetime.now()
@@ -273,21 +273,21 @@ class DataGenerator:
                 
                 conn.commit()
                 
-                # Obter IDs gerados
+                # Get generated IDs
                 cursor.execute(f"SELECT id_motorista FROM [{self.schema}].[Motoristas]")
                 self.generated_ids['motoristas'] = [row[0] for row in cursor.fetchall()]
                 
-            print(f"✅ {self.table_sizes['Motoristas']} motoristas criados!")
+            print(f"✅ {self.table_sizes['Motoristas']} drivers created!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao gerar motoristas: {e}")
+            print(f"❌ Error generating drivers: {e}")
             return False
 
     def generate_veiculos(self) -> bool:
-        """Gera dados para tabela Veiculos"""
+        """Generate data for Veiculos table"""
         try:
-            print(f"🚛 Gerando {self.table_sizes['Veiculos']} veículos...")
+            print(f"🚛 Generating {self.table_sizes['Veiculos']} vehicles...")
             
             with pyodbc.connect(self.db_conn_str) as conn:
                 cursor = conn.cursor()
@@ -300,7 +300,7 @@ class DataGenerator:
                     
                     tipo_veiculo = random.choice(['Caminhão', 'Van', 'Utilitário', 'Carro'])
                     
-                    # Capacidade baseada no tipo
+                    # Capacity based on type
                     if tipo_veiculo == 'Caminhão':
                         capacidade = random.uniform(5000, 25000)
                     elif tipo_veiculo == 'Van':
@@ -320,28 +320,28 @@ class DataGenerator:
                 
                 conn.commit()
                 
-                # Obter IDs gerados
+                # Get generated IDs
                 cursor.execute(f"SELECT id_veiculo FROM [{self.schema}].[Veiculos]")
                 self.generated_ids['veiculos'] = [row[0] for row in cursor.fetchall()]
                 
-            print(f"✅ {self.table_sizes['Veiculos']} veículos criados!")
+            print(f"✅ {self.table_sizes['Veiculos']} vehicles created!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao gerar veículos: {e}")
+            print(f"❌ Error generating vehicles: {e}")
             return False
 
     def generate_tipos_carga(self) -> bool:
-        """Gera dados para tabela Tipos_Carga"""
+        """Generate data for Tipos_Carga table"""
         try:
-            print(f"📦 Gerando {self.table_sizes['Tipos_Carga']} tipos de carga...")
+            print(f"📦 Generating {self.table_sizes['Tipos_Carga']} cargo types...")
             
             with pyodbc.connect(self.db_conn_str) as conn:
                 cursor = conn.cursor()
                 
                 for i, tipo in enumerate(self.faker.cargo_types[:self.table_sizes['Tipos_Carga']]):
-                    descricao = f"Transporte especializado de {tipo.lower()}"
-                    refrigeracao = 1 if tipo in ['Alimentos', 'Medicamentos', 'Bebidas'] else 0
+                    descricao = f"Specialized transport of {tipo.lower()}"
+                    refrigeracao = 1 if tipo in ['Food', 'Medicines', 'Beverages'] else 0
                     peso_medio = random.uniform(10, 1000)
                     
                     cursor.execute(f"""
@@ -352,21 +352,21 @@ class DataGenerator:
                 
                 conn.commit()
                 
-                # Obter IDs gerados
+                # Get generated IDs
                 cursor.execute(f"SELECT id_tipo_carga FROM [{self.schema}].[Tipos_Carga]")
                 self.generated_ids['tipos_carga'] = [row[0] for row in cursor.fetchall()]
                 
-            print(f"✅ {self.table_sizes['Tipos_Carga']} tipos de carga criados!")
+            print(f"✅ {self.table_sizes['Tipos_Carga']} cargo types created!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao gerar tipos de carga: {e}")
+            print(f"❌ Error generating cargo types: {e}")
             return False
 
     def generate_rotas(self) -> bool:
-        """Gera dados para tabela Rotas"""
+        """Generate data for Rotas table"""
         try:
-            print(f"🗺️  Gerando {self.table_sizes['Rotas']} rotas...")
+            print(f"🗺️  Generating {self.table_sizes['Rotas']} routes...")
             
             with pyodbc.connect(self.db_conn_str) as conn:
                 cursor = conn.cursor()
@@ -375,13 +375,13 @@ class DataGenerator:
                     origem = self.faker.city()
                     destino = self.faker.city()
                     
-                    # Evitar origem igual ao destino
+                    # Avoid origin equal to destination
                     while destino == origem:
                         destino = self.faker.city()
                     
                     nome_rota = f"{origem} → {destino}"
                     distancia = random.uniform(50, 2000)  # km
-                    tempo_estimado = distancia / random.uniform(60, 80)  # horas
+                    tempo_estimado = distancia / random.uniform(60, 80)  # hours
                     
                     cursor.execute(f"""
                         INSERT INTO [{self.schema}].[Rotas] 
@@ -391,21 +391,21 @@ class DataGenerator:
                 
                 conn.commit()
                 
-                # Obter IDs gerados
+                # Get generated IDs
                 cursor.execute(f"SELECT id_rota FROM [{self.schema}].[Rotas]")
                 self.generated_ids['rotas'] = [row[0] for row in cursor.fetchall()]
                 
-            print(f"✅ {self.table_sizes['Rotas']} rotas criadas!")
+            print(f"✅ {self.table_sizes['Rotas']} routes created!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao gerar rotas: {e}")
+            print(f"❌ Error generating routes: {e}")
             return False
 
     def generate_entregas(self) -> bool:
-        """Gera dados para tabela Entregas (tabela principal)"""
+        """Generate data for Entregas table (main table)"""
         try:
-            print(f"🚚 Gerando {self.table_sizes['Entregas']} entregas...")
+            print(f"🚚 Generating {self.table_sizes['Entregas']} deliveries...")
             
             batch_size = 5000
             total_entregas = self.table_sizes['Entregas']
@@ -422,14 +422,14 @@ class DataGenerator:
                         id_cliente_remetente = random.choice(self.generated_ids['clientes'])
                         id_cliente_destinatario = random.choice(self.generated_ids['clientes'])
                         
-                        # Evitar mesmo cliente como remetente e destinatário
+                        # Avoid same customer as sender and recipient
                         while id_cliente_destinatario == id_cliente_remetente:
                             id_cliente_destinatario = random.choice(self.generated_ids['clientes'])
                         
                         id_rota = random.choice(self.generated_ids['rotas']) if random.random() > 0.1 else None
                         id_tipo_carga = random.choice(self.generated_ids['tipos_carga'])
                         
-                        # Datas
+                        # Dates
                         data_inicio = self.faker.date_between(
                             datetime(2023, 1, 1),
                             datetime.now()
@@ -437,13 +437,13 @@ class DataGenerator:
                         
                         data_previsao_fim = data_inicio + timedelta(hours=random.randint(2, 48))
                         
-                        # Status e data fim real
+                        # Status and real end date
                         status_options = ['Agendada', 'Em Trânsito', 'Entregue', 'Atrasada', 'Cancelada', 'Problema']
-                        weights = [10, 15, 60, 10, 3, 2]  # Pesos para distribuição realista
+                        weights = [10, 15, 60, 10, 3, 2]  # Weights for realistic distribution
                         status = random.choices(status_options, weights=weights)[0]
                         
                         if status == 'Entregue':
-                            # 70% entregues no prazo, 30% com atraso
+                            # 70% delivered on time, 30% with delay
                             if random.random() < 0.7:
                                 data_fim_real = data_previsao_fim - timedelta(hours=random.randint(0, 4))
                             else:
@@ -467,25 +467,25 @@ class DataGenerator:
                               status, valor_frete, peso_carga))
                     
                     conn.commit()
-                    print(f"   📝 {batch_end} entregas inseridas...")
+                    print(f"   📝 {batch_end} deliveries inserted...")
                 
-                # Obter IDs gerados
+                # Get generated IDs
                 cursor.execute(f"SELECT id_entrega FROM [{self.schema}].[Entregas]")
                 self.generated_ids['entregas'] = [row[0] for row in cursor.fetchall()]
                 
-            print(f"✅ {self.table_sizes['Entregas']} entregas criadas!")
+            print(f"✅ {self.table_sizes['Entregas']} deliveries created!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao gerar entregas: {e}")
+            print(f"❌ Error generating deliveries: {e}")
             return False
 
     def generate_coletas(self) -> bool:
-        """Gera dados para tabela Coletas"""
+        """Generate data for Coletas table"""
         try:
-            print(f"📋 Gerando {self.table_sizes['Coletas']} coletas...")
+            print(f"📋 Generating {self.table_sizes['Coletas']} pickups...")
             
-            # Selecionar entregas aleatórias para coletas
+            # Select random deliveries for pickups
             entregas_selecionadas = random.sample(
                 self.generated_ids['entregas'], 
                 self.table_sizes['Coletas']
@@ -507,11 +507,11 @@ class DataGenerator:
                     )[0]
                     
                     observacoes = random.choice([
-                        None, 'Coleta realizada sem intercorrências',
-                        'Cliente ausente no primeiro contato',
-                        'Produto conferido e em perfeitas condições',
-                        'Endereço de difícil acesso',
-                        'Coleta reagendada a pedido do cliente'
+                        None, 'Pickup completed without issues',
+                        'Customer absent on first contact',
+                        'Product checked and in perfect condition',
+                        'Difficult access address',
+                        'Pickup rescheduled at customer request'
                     ])
                     
                     cursor.execute(f"""
@@ -522,21 +522,21 @@ class DataGenerator:
                     
                     if (i + 1) % 5000 == 0:
                         conn.commit()
-                        print(f"   📝 {i + 1} coletas inseridas...")
+                        print(f"   📝 {i + 1} pickups inserted...")
                 
                 conn.commit()
                 
-            print(f"✅ {self.table_sizes['Coletas']} coletas criadas!")
+            print(f"✅ {self.table_sizes['Coletas']} pickups created!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao gerar coletas: {e}")
+            print(f"❌ Error generating pickups: {e}")
             return False
 
     def generate_manutencoes_veiculo(self) -> bool:
-        """Gera dados para tabela Manutencoes_Veiculo"""
+        """Generate data for Manutencoes_Veiculo table"""
         try:
-            print(f"🔧 Gerando {self.table_sizes['Manutencoes_Veiculo']} manutenções...")
+            print(f"🔧 Generating {self.table_sizes['Manutencoes_Veiculo']} maintenance records...")
             
             with pyodbc.connect(self.db_conn_str) as conn:
                 cursor = conn.cursor()
@@ -554,10 +554,10 @@ class DataGenerator:
                     )[0]
                     
                     servicos = [
-                        'Troca de óleo e filtros', 'Revisão dos freios', 'Alinhamento e balanceamento',
-                        'Troca de pneus', 'Manutenção do motor', 'Revisão da suspensão',
-                        'Troca de bateria', 'Manutenção do sistema elétrico', 'Revisão da embreagem',
-                        'Manutenção do ar condicionado', 'Troca de correias', 'Revisão da direção'
+                        'Oil and filter change', 'Brake inspection', 'Alignment and balancing',
+                        'Tire replacement', 'Engine maintenance', 'Suspension inspection',
+                        'Battery replacement', 'Electrical system maintenance', 'Clutch inspection',
+                        'Air conditioning maintenance', 'Belt replacement', 'Steering inspection'
                     ]
                     
                     descricao_servico = random.choice(servicos)
@@ -572,21 +572,21 @@ class DataGenerator:
                     
                     if (i + 1) % 2000 == 0:
                         conn.commit()
-                        print(f"   📝 {i + 1} manutenções inseridas...")
+                        print(f"   📝 {i + 1} maintenance records inserted...")
                 
                 conn.commit()
                 
-            print(f"✅ {self.table_sizes['Manutencoes_Veiculo']} manutenções criadas!")
+            print(f"✅ {self.table_sizes['Manutencoes_Veiculo']} maintenance records created!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao gerar manutenções: {e}")
+            print(f"❌ Error generating maintenance records: {e}")
             return False
 
     def generate_abastecimentos(self) -> bool:
-        """Gera dados para tabela Abastecimentos"""
+        """Generate data for Abastecimentos table"""
         try:
-            print(f"⛽ Gerando {self.table_sizes['Abastecimentos']} abastecimentos...")
+            print(f"⛽ Generating {self.table_sizes['Abastecimentos']} fuel records...")
             
             with pyodbc.connect(self.db_conn_str) as conn:
                 cursor = conn.cursor()
@@ -598,10 +598,10 @@ class DataGenerator:
                         datetime.now()
                     )
                     
-                    # Litros baseados no tipo de veículo (simulação)
+                    # Liters based on vehicle type (simulation)
                     litros = random.uniform(30, 200)
                     
-                    # Preço por litro realista para o Brasil
+                    # Realistic price per liter for Brazil
                     preco_por_litro = random.uniform(4.50, 6.50)
                     valor_total = litros * preco_por_litro
                     
@@ -618,30 +618,30 @@ class DataGenerator:
                     
                     if (i + 1) % 1000 == 0:
                         conn.commit()
-                        print(f"   📝 {i + 1} abastecimentos inseridos...")
+                        print(f"   📝 {i + 1} fuel records inserted...")
                 
                 conn.commit()
                 
-            print(f"✅ {self.table_sizes['Abastecimentos']} abastecimentos criados!")
+            print(f"✅ {self.table_sizes['Abastecimentos']} fuel records created!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao gerar abastecimentos: {e}")
+            print(f"❌ Error generating fuel records: {e}")
             return False
 
     def generate_multas_transito(self) -> bool:
-        """Gera dados para tabela Multas_Transito"""
+        """Generate data for Multas_Transito table"""
         try:
-            print(f"🚨 Gerando {self.table_sizes['Multas_Transito']} multas...")
+            print(f"🚨 Generating {self.table_sizes['Multas_Transito']} traffic tickets...")
             
             with pyodbc.connect(self.db_conn_str) as conn:
                 cursor = conn.cursor()
                 
                 infracoes = [
-                    'Excesso de velocidade', 'Estacionamento irregular', 'Avanço de sinal vermelho',
-                    'Uso de celular ao volante', 'Não uso do cinto de segurança', 'Ultrapassagem proibida',
-                    'Parada sobre faixa de pedestre', 'Conversão proibida', 'Dirigir sem CNH',
-                    'Transporte irregular de carga', 'Veículo com documentação vencida'
+                    'Speeding', 'Illegal parking', 'Running red light',
+                    'Using cell phone while driving', 'Not wearing seat belt', 'Illegal overtaking',
+                    'Stopping on pedestrian crossing', 'Prohibited turn', 'Driving without license',
+                    'Irregular cargo transport', 'Vehicle with expired documentation'
                 ]
                 
                 for i in range(self.table_sizes['Multas_Transito']):
@@ -656,10 +656,10 @@ class DataGenerator:
                     local_multa = f"{self.faker.address()}, {self.faker.city()}"
                     descricao_infracao = random.choice(infracoes)
                     
-                    # Valores realistas de multas no Brasil
-                    if descricao_infracao in ['Excesso de velocidade', 'Avanço de sinal vermelho']:
+                    # Realistic ticket values in Brazil
+                    if descricao_infracao in ['Speeding', 'Running red light']:
                         valor_multa = random.uniform(130, 880)
-                    elif descricao_infracao in ['Uso de celular ao volante', 'Dirigir sem CNH']:
+                    elif descricao_infracao in ['Using cell phone while driving', 'Driving without license']:
                         valor_multa = random.uniform(260, 1500)
                     else:
                         valor_multa = random.uniform(88, 400)
@@ -677,18 +677,18 @@ class DataGenerator:
                 
                 conn.commit()
                 
-            print(f"✅ {self.table_sizes['Multas_Transito']} multas criadas!")
+            print(f"✅ {self.table_sizes['Multas_Transito']} traffic tickets created!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao gerar multas: {e}")
+            print(f"❌ Error generating traffic tickets: {e}")
             return False
 
     def show_statistics(self) -> bool:
-        """Mostra estatísticas dos dados gerados"""
+        """Show statistics of generated data"""
         try:
             print("\n" + "=" * 60)
-            print("📊 ESTATÍSTICAS DOS DADOS GERADOS")
+            print("📊 GENERATED DATA STATISTICS")
             print("=" * 60)
             
             with pyodbc.connect(self.db_conn_str) as conn:
@@ -702,17 +702,17 @@ class DataGenerator:
                     total_records += actual_count
                     
                     status = "✅" if actual_count == expected_count else "⚠️"
-                    print(f"{status} {table_name:<20} {actual_count:>8,} registros")
+                    print(f"{status} {table_name:<20} {actual_count:>8,} records")
                 
                 print("-" * 60)
-                print(f"📈 TOTAL DE REGISTROS: {total_records:,}")
-                print(f"🎯 META (200.000):     200,000")
-                print(f"📊 DIFERENÇA:          {total_records - 200000:+,}")
+                print(f"📈 TOTAL RECORDS: {total_records:,}")
+                print(f"🎯 TARGET (200,000):     200,000")
+                print(f"📊 DIFFERENCE:          {total_records - 200000:+,}")
                 
-                # Estatísticas adicionais interessantes
-                print(f"\n📋 ESTATÍSTICAS ADICIONAIS:")
+                # Additional interesting statistics
+                print(f"\n📋 ADDITIONAL STATISTICS:")
                 
-                # Clientes mais ativos
+                # Most active customers
                 cursor.execute(f"""
                     SELECT TOP 5 c.nome_cliente, COUNT(e.id_entrega) as total_entregas
                     FROM [{self.schema}].[Clientes] c
@@ -721,11 +721,11 @@ class DataGenerator:
                     ORDER BY total_entregas DESC
                 """)
                 
-                print("🏆 Top 5 Clientes Remetentes:")
+                print("🏆 Top 5 Sender Customers:")
                 for nome, total in cursor.fetchall():
-                    print(f"   • {nome[:30]:<30} {total:>4} entregas")
+                    print(f"   • {nome[:30]:<30} {total:>4} deliveries")
                 
-                # Status das entregas
+                # Delivery status
                 cursor.execute(f"""
                     SELECT status_entrega, COUNT(*) as quantidade
                     FROM [{self.schema}].[Entregas]
@@ -733,33 +733,33 @@ class DataGenerator:
                     ORDER BY quantidade DESC
                 """)
                 
-                print("\n📦 Status das Entregas:")
+                print("\n📦 Delivery Status:")
                 for status, qtd in cursor.fetchall():
                     percentual = (qtd / self.table_sizes['Entregas']) * 100
                     print(f"   • {status:<15} {qtd:>6,} ({percentual:>5.1f}%)")
                 
-                # Receita total
+                # Total revenue
                 cursor.execute(f"SELECT SUM(valor_frete) FROM [{self.schema}].[Entregas]")
                 receita_total = cursor.fetchone()[0] or 0
-                print(f"\n💰 RECEITA TOTAL: R$ {receita_total:,.2f}")
+                print(f"\n💰 TOTAL REVENUE: R$ {receita_total:,.2f}")
                 
                 return True
                 
         except Exception as e:
-            print(f"❌ Erro ao gerar estatísticas: {e}")
+            print(f"❌ Error generating statistics: {e}")
             return False
 
     def generate_all_data(self, clear_existing: bool = True) -> bool:
-        """Gera todos os dados do sistema"""
+        """Generate all system data"""
         start_time = time.time()
         
-        print("🎲 GERADOR DE DADOS FAKER - SISTEMA DE ENTREGAS")
+        print("🎲 FAKER DATA GENERATOR - DELIVERY SYSTEM")
         print("=" * 60)
-        print(f"🎯 Meta: 200.000 registros distribuídos entre 10 tabelas")
-        print(f"📊 Distribuição planejada:")
+        print(f"🎯 Target: 200,000 records distributed across 10 tables")
+        print(f"📊 Planned distribution:")
         
         for table, count in self.table_sizes.items():
-            print(f"   • {table:<20} {count:>8,} registros")
+            print(f"   • {table:<20} {count:>8,} records")
         
         print("-" * 60)
         
@@ -768,81 +768,81 @@ class DataGenerator:
         
         print()
         
-        # Sequência de geração (respeitando dependências de FK)
+        # Generation sequence (respecting FK dependencies)
         generators = [
-            ('Clientes', self.generate_clientes),
-            ('Motoristas', self.generate_motoristas),
-            ('Veículos', self.generate_veiculos),
-            ('Tipos de Carga', self.generate_tipos_carga),
-            ('Rotas', self.generate_rotas),
-            ('Entregas', self.generate_entregas),
-            ('Coletas', self.generate_coletas),
-            ('Manutenções', self.generate_manutencoes_veiculo),
-            ('Abastecimentos', self.generate_abastecimentos),
-            ('Multas', self.generate_multas_transito),
+            ('Customers', self.generate_clientes),
+            ('Drivers', self.generate_motoristas),
+            ('Vehicles', self.generate_veiculos),
+            ('Cargo Types', self.generate_tipos_carga),
+            ('Routes', self.generate_rotas),
+            ('Deliveries', self.generate_entregas),
+            ('Pickups', self.generate_coletas),
+            ('Maintenance', self.generate_manutencoes_veiculo),
+            ('Fuel Records', self.generate_abastecimentos),
+            ('Traffic Tickets', self.generate_multas_transito),
         ]
         
         success_count = 0
         for description, generator_func in generators:
-            print(f"\n🔄 Processando {description}...")
+            print(f"\n🔄 Processing {description}...")
             if generator_func():
                 success_count += 1
-                print(f"✅ {description} concluído!")
+                print(f"✅ {description} completed!")
             else:
-                print(f"❌ Falha em {description}!")
+                print(f"❌ Failed in {description}!")
                 return False
         
-        # Mostrar estatísticas finais
+        # Show final statistics
         self.show_statistics()
         
         elapsed_time = time.time() - start_time
-        print(f"\n⏱️  TEMPO TOTAL: {elapsed_time:.1f} segundos")
-        print(f"🎉 GERAÇÃO CONCLUÍDA COM SUCESSO!")
-        print(f"✅ {success_count}/{len(generators)} tabelas processadas")
+        print(f"\n⏱️  TOTAL TIME: {elapsed_time:.1f} seconds")
+        print(f"🎉 GENERATION COMPLETED SUCCESSFULLY!")
+        print(f"✅ {success_count}/{len(generators)} tables processed")
         
         return True
 
 def main():
-    """Função principal"""
-    print("🎲 Gerador de Dados Faker - Sistema de Entregas")
+    """Main function"""
+    print("🎲 Faker Data Generator - Delivery System")
     print("=" * 60)
     
-    # Verificar argumentos
+    # Check arguments
     skip_clear = "--no-clear" in sys.argv
     
     if not skip_clear:
-        print("⚠️  Este script irá LIMPAR todos os dados existentes!")
-        response = input("Digite 'sim' para continuar: ")
-        if response.lower() != 'sim':
-            print("❌ Operação cancelada")
+        print("⚠️  This script will CLEAR all existing data!")
+        response = input("Type 'yes' to continue: ")
+        if response.lower() != 'yes':
+            print("❌ Operation cancelled")
             sys.exit(0)
     
-    # Verificar dependências
+    # Check dependencies
     try:
         import pyodbc
     except ImportError:
-        print("❌ pyodbc não está instalado!")
-        print("💡 Execute: pip install pyodbc")
+        print("❌ pyodbc is not installed!")
+        print("💡 Run: pip install pyodbc")
         sys.exit(1)
     
-    # Carregar variáveis de ambiente
+    # Load environment variables
     if os.path.exists('.env'):
-        print("📋 Carregando variáveis de ambiente...")
+        print("📋 Loading environment variables...")
         with open('.env', 'r') as f:
             for line in f:
                 if '=' in line and not line.startswith('#'):
                     key, value = line.strip().split('=', 1)
                     os.environ[key] = value
     
-    # Gerar dados
+    # Generate data
     generator = DataGenerator()
     
     if generator.generate_all_data(clear_existing=not skip_clear):
-        print("\n🎊 PROCESSO CONCLUÍDO!")
-        print("💡 Seus dados estão prontos para análise e desenvolvimento!")
+        print("\n🎊 PROCESS COMPLETED!")
+        print("💡 Your data is ready for analysis and development!")
         sys.exit(0)
     else:
-        print("\n💥 FALHA NA GERAÇÃO!")
+        print("\n💥 GENERATION FAILED!")
         sys.exit(1)
 
 if __name__ == "__main__":
