@@ -1,17 +1,17 @@
-site_name: Projeto ETL com Apache Spark & Azure Data Lake
-site_description: Pipeline ETL moderno para processamento de dados em larga escala usando Apache Spark, Airflow e Azure Data Lake
-site_author: Equipe de Data Engineering
-site_url: https://seu-dominio.github.io/projeto_etl_spark/
+site_name: ETL Project with Apache Spark & Azure Data Lake
+site_description: Modern ETL pipeline for large-scale data processing using Apache Spark, Airflow and Azure Data Lake
+site_author: Data Engineering Team
+site_url: https://arturoburigo.github.io/projeto_etl_spark/
 
 # Repository
 repo_name: projeto_etl_spark
-repo_url: https://github.com/seu-usuario/projeto_etl_spark
+repo_url: https://github.com/arturoburigo/projeto_etl_spark
 edit_uri: edit/main/docs/
 
 # Configuration
 theme:
   name: material
-  language: pt
+  language: en
   
   # Color scheme
   palette:
@@ -58,7 +58,7 @@ theme:
 # Plugins
 plugins:
   - search:
-      lang: pt
+      lang: en
   - mermaid2:
       arguments:
         theme: base
@@ -67,7 +67,7 @@ plugins:
           primaryTextColor: '#ffffff'
   - git-revision-date-localized:
       type: date
-      locale: pt
+      locale: en
   - minify:
       minify_html: true
 
@@ -98,7 +98,7 @@ markdown_extensions:
   - pymdownx.keys
   - pymdownx.magiclink:
       repo_url_shorthand: true
-      user: seu-usuario
+      user: arturoburigo
       repo: projeto_etl_spark
   - pymdownx.mark
   - pymdownx.smartsymbols
@@ -115,34 +115,34 @@ markdown_extensions:
 
 # Navigation
 nav:
-  - 🏠 Início: index.md
-  - 📚 Documentação:
-    - 🚀 Início Rápido: inicio_rapido.md
-    - 🛠️ Instalação: instalacao.md
-    - ⚙️ Configuração: configuracao.md
-    - 🔐 Variáveis de Ambiente: env_example.md
-    - 🏗️ Arquitetura: arquitetura.md
-  - 🔧 Pipeline ETL:
-    - 📊 Visão Geral: pipeline_etl.md
-    - 🥉 Camada Bronze: camada_bronze.md
-    - 🥈 Camada Silver: camada_silver.md
-    - 🥇 Camada Gold: camada_gold.md
-    - 📈 KPIs e Métricas: kpis_metricas.md
-    - ⚡ Otimização Spark: otimizacao_spark.md
-  - 🎛️ Orquestração:
+  - 🏠 Home: index.md
+  - 📚 Documentation:
+    - 🚀 Quick Start: quick_start.md
+    - 🛠️ Installation: installation.md
+    - ⚙️ Configuration: configuration.md
+    - 🔐 Environment Variables: env_example.md
+    - 🏗️ Architecture: architecture.md
+  - 🔧 ETL Pipeline:
+    - 📊 Overview: etl_pipeline.md
+    - 🥉 Bronze Layer: bronze_layer.md
+    - 🥈 Silver Layer: silver_layer.md
+    - 🥇 Gold Layer: gold_layer.md
+    - 📈 KPIs and Metrics: kpis_metrics.md
+    - ⚡ Spark Optimization: spark_optimization.md
+  - 🎛️ Orchestration:
     - Apache Airflow: airflow.md
     - 📋 DAGs: dags.md
-    - 🔍 Monitoramento: monitoramento.md
-  - 🧪 Desenvolvimento:
-    - 🏗️ Estrutura do Projeto: estrutura_projeto.md
-    - 🧪 Testes: testes.md
-    - 📝 Como Usar: uso.md
-    - 🤝 Contribuição: contribuicao.md
+    - 🔍 Monitoring: monitoring.md
+  - 🧪 Development:
+    - 🏗️ Project Structure: project_structure.md
+    - 🧪 Tests: tests.md
+    - 📝 How to Use: usage.md
+    - 🤝 Contributing: contributing.md
   - 🚀 Deploy:
     - ☁️ Azure: deploy_azure.md
     - 🐳 Docker: deploy_docker.md
     - 🏗️ Terraform: terraform.md
-  - 📖 Referência:
+  - 📖 Reference:
     - 🔧 API: api_reference.md
     - 📊 Schemas: schemas.md
     - ❓ FAQ: faq.md
@@ -161,4 +161,4 @@ extra:
     default: latest
 
 # Copyright
-copyright: Copyright &copy; 2025 Equipe de Data Engineering
+copyright: Copyright &copy; 2025 Data Engineering Team

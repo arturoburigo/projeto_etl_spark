@@ -1,59 +1,59 @@
-# 🚀 Projeto ETL com Apache Spark & Azure Data Lake
+# 🚀 ETL Project with Apache Spark & Azure Data Lake
 
 <div class="grid cards" markdown>
 
--   :material-rocket-launch:{ .lg .middle } **Pipeline ETL Moderno**
+-   :material-rocket-launch:{ .lg .middle } **Modern ETL Pipeline**
 
     ---
 
-    Pipeline escalável para processamento de dados em larga escala usando Apache Spark, orquestrado por Apache Airflow e armazenado no Azure Data Lake.
+    Scalable pipeline for large-scale data processing using Apache Spark, orchestrated by Apache Airflow and stored in Azure Data Lake.
 
-    [:octicons-arrow-right-24: Início Rápido](inicio_rapido.md)
+    [:octicons-arrow-right-24: Quick Start](quick_start.md)
 
--   :material-cloud:{ .lg .middle } **Arquitetura Medallion**
+-   :material-cloud:{ .lg .middle } **Medallion Architecture**
 
     ---
 
-    Implementação da arquitetura Medallion (Bronze, Silver, Gold) para organização e processamento de dados com qualidade empresarial.
+    Implementation of Medallion architecture (Bronze, Silver, Gold) for enterprise-grade data organization and processing.
 
-    [:octicons-arrow-right-24: Ver Arquitetura](arquitetura.md)
+    [:octicons-arrow-right-24: View Architecture](architecture.md)
 
 -   :material-chart-line:{ .lg .middle } **Analytics & KPIs**
 
     ---
 
-    Modelo dimensional com KPIs de negócio para análise de performance logística e métricas operacionais.
+    Dimensional model with business KPIs for logistics performance analysis and operational metrics.
 
-    [:octicons-arrow-right-24: Ver KPIs](kpis_metricas.md)
+    [:octicons-arrow-right-24: View KPIs](kpis_metrics.md)
 
--   :material-cog:{ .lg .middle } **Orquestração Avançada**
+-   :material-cog:{ .lg .middle } **Advanced Orchestration**
 
     ---
 
-    DAGs parametrizáveis no Airflow com monitoramento, retry automático e notificações de status.
+    Parameterizable DAGs in Airflow with monitoring, automatic retry, and status notifications.
 
-    [:octicons-arrow-right-24: Ver Airflow](airflow.md)
+    [:octicons-arrow-right-24: View Airflow](airflow.md)
 
 </div>
 
 ---
 
-## 🎯 Sobre o Projeto
+## 🎯 About the Project
 
-Este projeto implementa um **pipeline ETL completo e moderno** que demonstra as melhores práticas para processamento de dados em larga escala. O sistema processa dados de um contexto de **logística e transporte**, incluindo informações sobre clientes, motoristas, veículos, entregas, rotas e manutenções.
+This project implements a **complete and modern ETL pipeline** that demonstrates best practices for large-scale data processing. The system processes data from a **logistics and transportation context**, including information about customers, drivers, vehicles, deliveries, routes, and maintenance.
 
-### ✨ Principais Características
+### ✨ Key Features
 
-- **🔄 ETL Completo**: Extração do SQL Server, transformação com Spark, carregamento no Data Lake
-- **🏗️ Arquitetura Medallion**: Organização em camadas Bronze, Silver e Gold
-- **⚡ Processamento Distribuído**: Apache Spark com Delta Lake para ACID transactions
-- **🎛️ Orquestração**: Apache Airflow para automação e monitoramento
-- **☁️ Cloud Native**: Integração completa com Azure Data Lake Storage
-- **📊 Analytics Ready**: Modelo dimensional para Business Intelligence
+- **🔄 Complete ETL**: Extraction from SQL Server, transformation with Spark, loading into Data Lake
+- **🏗️ Medallion Architecture**: Organization in Bronze, Silver, and Gold layers
+- **⚡ Distributed Processing**: Apache Spark with Delta Lake for ACID transactions
+- **🎛️ Orchestration**: Apache Airflow for automation and monitoring
+- **☁️ Cloud Native**: Complete integration with Azure Data Lake Storage
+- **📊 Analytics Ready**: Dimensional model for Business Intelligence
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 🛠️ Technology Stack
 
 <div class="grid cards" markdown>
 
@@ -61,145 +61,145 @@ Este projeto implementa um **pipeline ETL completo e moderno** que demonstra as 
     
     ---
     
-    Linguagem principal para desenvolvimento do pipeline, com bibliotecas especializadas em processamento de dados.
+    Main language for pipeline development, with specialized data processing libraries.
 
 -   :simple-apachespark:{ .lg .middle } **Apache Spark 3.x**
     
     ---
     
-    Engine de processamento distribuído para transformações de dados em larga escala com Delta Lake.
+    Distributed processing engine for large-scale data transformations with Delta Lake.
 
 -   :simple-apacheairflow:{ .lg .middle } **Apache Airflow 2.x**
     
     ---
     
-    Plataforma de orquestração para automação, agendamento e monitoramento do pipeline.
+    Orchestration platform for pipeline automation, scheduling, and monitoring.
 
 -   :simple-microsoftazure:{ .lg .middle } **Azure Data Lake**
     
     ---
     
-    Armazenamento escalável e seguro para dados estruturados e semi-estruturados.
+    Scalable and secure storage for structured and semi-structured data.
 
 -   :simple-docker:{ .lg .middle } **Docker & Compose**
     
     ---
     
-    Containerização para ambiente consistente e deploy simplificado.
+    Containerization for consistent environment and simplified deployment.
 
 -   :simple-terraform:{ .lg .middle } **Terraform**
     
     ---
     
-    Infrastructure as Code para provisionamento automatizado de recursos Azure.
+    Infrastructure as Code for automated Azure resource provisioning.
 
 </div>
 
 ---
 
-## 📊 Modelo de Dados
+## 📊 Data Model
 
-O projeto processa dados de um sistema de **logística e transporte** com as seguintes entidades principais:
+The project processes data from a **logistics and transportation system** with the following main entities:
 
 ```mermaid
 erDiagram
-    CLIENTES ||--o{ ENTREGAS : "remetente/destinatario"
-    MOTORISTAS ||--o{ ENTREGAS : "responsavel"
-    VEICULOS ||--o{ ENTREGAS : "transporta"
-    VEICULOS ||--o{ MANUTENCOES : "sofre"
-    VEICULOS ||--o{ ABASTECIMENTOS : "consome"
-    VEICULOS ||--o{ MULTAS : "recebe"
-    ROTAS ||--o{ ENTREGAS : "utiliza"
-    TIPOS_CARGA ||--o{ ENTREGAS : "categoria"
-    ENTREGAS ||--o{ COLETAS : "inclui"
+    CUSTOMERS ||--o{ DELIVERIES : "sender/recipient"
+    DRIVERS ||--o{ DELIVERIES : "responsible"
+    VEHICLES ||--o{ DELIVERIES : "transports"
+    VEHICLES ||--o{ MAINTENANCE : "undergoes"
+    VEHICLES ||--o{ REFUELING : "consumes"
+    VEHICLES ||--o{ FINES : "receives"
+    ROUTES ||--o{ DELIVERIES : "uses"
+    CARGO_TYPES ||--o{ DELIVERIES : "category"
+    DELIVERIES ||--o{ PICKUPS : "includes"
     
-    CLIENTES {
-        int id_cliente
-        string nome_cliente
-        string tipo_cliente
+    CUSTOMERS {
+        int customer_id
+        string customer_name
+        string customer_type
         string cpf_cnpj
         string email
-        string telefone
-        string endereco
+        string phone
+        string address
     }
     
-    ENTREGAS {
-        int id_entrega
-        int id_cliente_remetente
-        int id_cliente_destinatario
-        int id_motorista
-        int id_veiculo
-        int id_rota
-        date data_inicio
-        date data_previsao
-        string status_entrega
-        decimal valor_frete
+    DELIVERIES {
+        int delivery_id
+        int sender_customer_id
+        int recipient_customer_id
+        int driver_id
+        int vehicle_id
+        int route_id
+        date start_date
+        date estimated_date
+        string delivery_status
+        decimal freight_value
     }
     
-    VEICULOS {
-        int id_veiculo
-        string placa
-        string modelo
-        string marca
-        int ano_fabricacao
-        decimal capacidade_kg
-        string tipo_veiculo
+    VEHICLES {
+        int vehicle_id
+        string license_plate
+        string model
+        string brand
+        int manufacture_year
+        decimal capacity_kg
+        string vehicle_type
     }
 ```
 
 ---
 
-## 🚀 Início Rápido
+## 🚀 Quick Start
 
-### 1. **Pré-requisitos**
+### 1. **Prerequisites**
 
-Certifique-se de ter instalado:
+Make sure you have installed:
 
 - [x] Python 3.10+
 - [x] Docker & Docker Compose
 - [x] Azure CLI
-- [x] Poetry (gerenciador de dependências)
+- [x] Poetry (dependency manager)
 
-### 2. **Instalação**
+### 2. **Installation**
 
 ```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/projeto_etl_spark.git
+# Clone the repository
+git clone https://github.com/arturoburigo/projeto_etl_spark
 cd projeto_etl_spark
 
-# Instale as dependências
+# Install dependencies
 poetry install
 
-# Configure as variáveis de ambiente
+# Configure environment variables
 cp .env.example .env
-# Edite o arquivo .env com suas credenciais Azure
+# Edit the .env file with your Azure credentials
 ```
 
-### 3. **Execução**
+### 3. **Execution**
 
 ```bash
-# Inicie o Airflow
+# Start Airflow
 cd astro
 astro dev start
 
-# Acesse a interface web
+# Access the web interface
 # http://localhost:8080 (admin/admin)
 ```
 
-### 4. **Execute o Pipeline**
+### 4. **Run the Pipeline**
 
-1. Navegue até a DAG `sqlserver_to_bronze_adls`
-2. Clique em "Trigger DAG"
-3. Monitore a execução na interface do Airflow
+1. Navigate to the DAG `Medallion Architecture - ETL`
+2. Click "Trigger DAG"
+3. Monitor execution in the Airflow interface
 
-!!! tip "Dica"
-    Para uma configuração mais detalhada, consulte o [Guia de Instalação](instalacao.md) completo.
+!!! tip "Tip"
+    For more detailed configuration, see the complete [Installation Guide](installation.md).
 
 ---
 
-## 📈 Pipeline de Dados
+## 📈 Data Pipeline
 
-### 🔄 Fluxo de Execução
+### 🔄 Execution Flow
 
 ```mermaid
 graph LR
@@ -209,13 +209,13 @@ graph LR
     D --> E[Gold Layer]
     E --> F[Analytics & BI]
     
-    subgraph "Processamento"
+    subgraph "Processing"
         C -.-> G[Spark ETL]
         D -.-> G
         E -.-> G
     end
     
-    subgraph "Orquestração"
+    subgraph "Orchestration"
         H[Airflow DAGs]
         H -.-> B
         H -.-> C
@@ -224,20 +224,20 @@ graph LR
     end
 ```
 
-### 📊 Camadas de Dados
+### 📊 Data Layers
 
-| Camada | Descrição | Formato | Finalidade |
-|--------|-----------|---------|------------|
-| **🔍 Landing** | Dados brutos extraídos | CSV | Staging inicial |
-| **🥉 Bronze** | Dados históricos completos | Delta | Data Lake |
-| **🥈 Silver** | Dados limpos e padronizados | Delta | Analytics |
-| **🥇 Gold** | Modelo dimensional | Delta | Business Intelligence |
+| Layer | Description | Format | Purpose |
+|-------|-------------|--------|---------|
+| **🔍 Landing** | Raw extracted data | CSV | Initial staging |
+| **🥉 Bronze** | Complete historical data | Delta | Data Lake |
+| **🥈 Silver** | Clean and standardized data | Delta | Analytics |
+| **🥇 Gold** | Dimensional model | Delta | Business Intelligence |
 
 ---
 
-## 🎯 KPIs e Métricas
+## 🎯 KPIs and Metrics
 
-O projeto calcula automaticamente os seguintes indicadores de performance:
+The project automatically calculates the following performance indicators:
 
 <div class="grid cards" markdown>
 
@@ -245,86 +245,86 @@ O projeto calcula automaticamente os seguintes indicadores de performance:
 
     ---
 
-    Percentual de entregas realizadas dentro do prazo estabelecido.
+    Percentage of deliveries completed within the established deadline.
     
-    **Meta**: > 95%
+    **Target**: > 95%
 
--   :material-map-marker-path:{ .lg .middle } **Custo por Rota**
+-   :material-map-marker-path:{ .lg .middle } **Cost per Route**
 
     ---
 
-    Custo médio de frete por quilômetro em cada rota.
+    Average freight cost per kilometer on each route.
     
-    **Análise**: Semanal
+    **Analysis**: Weekly
 
--   :material-truck:{ .lg .middle } **Utilização da Frota**
+-   :material-truck:{ .lg .middle } **Fleet Utilization**
 
     ---
 
-    Total de entregas por tipo de veículo e taxa de ocupação.
+    Total deliveries by vehicle type and occupancy rate.
     
-    **Frequência**: Mensal
+    **Frequency**: Monthly
 
--   :material-account-cash:{ .lg .middle } **Revenue por Cliente**
+-   :material-account-cash:{ .lg .middle } **Revenue per Customer**
 
     ---
 
-    Valor total de frete gerado por cada cliente.
+    Total freight value generated by each customer.
     
-    **Segmentação**: Por região
+    **Segmentation**: By region
 
 </div>
 
 ---
 
-## 📚 Próximos Passos
+## 📚 Next Steps
 
 <div class="grid cards" markdown>
 
--   :material-book-open-page-variant:{ .lg .middle } **[📖 Documentação Completa](instalacao.md)**
+-   :material-book-open-page-variant:{ .lg .middle } **[📖 Complete Documentation](installation.md)**
 
     ---
 
-    Guias detalhados de instalação, configuração e uso do sistema.
+    Detailed guides for installation, configuration, and system usage.
 
--   :material-architecture:{ .lg .middle } **[🏗️ Arquitetura](arquitetura.md)**
-
-    ---
-
-    Visão detalhada da arquitetura do sistema e decisões de design.
-
--   :material-pipe:{ .lg .middle } **[🔧 Pipeline ETL](pipeline_etl.md)**
+-   :material-architecture:{ .lg .middle } **[🏗️ Architecture](architecture.md)**
 
     ---
 
-    Documentação técnica do pipeline de dados e transformações.
+    Detailed view of system architecture and design decisions.
 
--   :material-test-tube:{ .lg .middle } **[🧪 Testes](testes.md)**
+-   :material-pipe:{ .lg .middle } **[🔧 ETL Pipeline](etl_pipeline.md)**
 
     ---
 
-    Estratégia de testes, cobertura e como executar os testes.
+    Technical documentation of data pipeline and transformations.
+
+-   :material-test-tube:{ .lg .middle } **[🧪 Tests](tests.md)**
+
+    ---
+
+    Testing strategy, coverage, and how to run tests.
 
 </div>
 
 ---
 
-## 🤝 Contribuição
+## 🤝 Contributing
 
-Contribuições são sempre bem-vindas! Este projeto segue as melhores práticas de desenvolvimento colaborativo:
+Contributions are always welcome! This project follows collaborative development best practices:
 
-- **Code Review**: Todos os PRs passam por revisão
-- **Testes Automatizados**: Cobertura de testes > 80%
-- **Documentação**: Toda funcionalidade deve ser documentada
-- **Padrões**: Seguimos PEP 8 e usamos Black para formatação
+- **Code Review**: All PRs go through review
+- **Automated Tests**: Test coverage > 80%
+- **Documentation**: All functionality must be documented
+- **Standards**: We follow PEP 8 and use Black for formatting
 
-[Como Contribuir →](contribuicao.md){ .md-button .md-button--primary }
+[How to Contribute →](contributing.md){ .md-button .md-button--primary }
 
 ---
 
-## 👥 Equipe
+## 👥 Team
 
-Este projeto foi desenvolvido por uma equipe multidisciplinar de especialistas em dados:
+This project was developed by a multidisciplinary team of data specialists:
 
 - **Arturo Burigo** - Tech Lead & Architecture
 - **Luiz Bezerra** - Data Engineer
@@ -334,5 +334,5 @@ Este projeto foi desenvolvido por uma equipe multidisciplinar de especialistas e
 
 ---
 
-!!! info "Licença"
-    Este projeto está licenciado sob a **MIT License**. Veja o arquivo [LICENSE](https://github.com/seu-usuario/projeto_etl_spark/blob/main/LICENSE) para detalhes.
+!!! info "License"
+    This project is licensed under the **MIT License**. See the [LICENSE](https://github.com/arturoburigo/projeto_etl_spark/blob/main/LICENSE) file for details.

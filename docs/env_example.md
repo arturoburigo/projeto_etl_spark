@@ -1,238 +1,238 @@
-# 🔐 Configuração de Variáveis de Ambiente
+# 🔐 Environment Variables Configuration
 
-## 📋 Visão Geral
+## 📋 Overview
 
-Este documento descreve todas as variáveis de ambiente necessárias para configurar e executar o projeto ETL com Apache Spark e Azure Data Lake.
+This document describes all the environment variables needed to configure and run the ETL project with Apache Spark and Azure Data Lake.
 
 ---
 
-## 📁 Arquivo `.env.example`
+## 📁 `.env.example` File
 
-Crie um arquivo `.env` na raiz do projeto baseado no template abaixo:
+Create a `.env` file in the project root based on the template below:
 
 ```bash
 # =============================================================================
-# PROJETO ETL COM APACHE SPARK & AZURE DATA LAKE
-# Arquivo de Configuração de Variáveis de Ambiente
+# ETL PROJECT WITH APACHE SPARK & AZURE DATA LAKE
+# Environment Variables Configuration File
 # =============================================================================
 
 # =============================================================================
 # AZURE DATA LAKE STORAGE
 # =============================================================================
 
-# Nome da conta de armazenamento Azure
-ADLS_ACCOUNT_NAME=seuaccountstorage
+# Azure storage account name
+ADLS_ACCOUNT_NAME=yourstorageaccount
 
-# Containers do Data Lake (Medallion Architecture)
+# Data Lake Containers (Medallion Architecture)
 ADLS_FILE_SYSTEM_NAME=landing
 ADLS_BRONZE_CONTAINER_NAME=bronze
 ADLS_SILVER_CONTAINER_NAME=silver
 ADLS_GOLD_CONTAINER_NAME=gold
 
-# Token SAS para acesso ao Azure Storage
-# Gere um novo token com permissões: read, add, create, write, delete, list, update, process, tag, filter, setimmutability
-# Válido para: blob, file, queue, table
-ADLS_SAS_TOKEN="sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2024-12-31T23:59:59Z&st=2024-01-01T00:00:00Z&spr=https&sig=SUA_ASSINATURA_SAS_AQUI"
+# SAS Token for Azure Storage access
+# Generate a new token with permissions: read, add, create, write, delete, list, update, process, tag, filter, setimmutability
+# Valid for: blob, file, queue, table
+ADLS_SAS_TOKEN="sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2024-12-31T23:59:59Z&st=2024-01-01T00:00:00Z&spr=https&sig=YOUR_SAS_SIGNATURE_HERE"
 
 # =============================================================================
 # SQL SERVER DATABASE
 # =============================================================================
 
-# Servidor SQL Server (Azure SQL Database ou SQL Server local)
-SQL_SERVER=seu-servidor.database.windows.net
+# SQL Server (Azure SQL Database or local SQL Server)
+SQL_SERVER=your-server.database.windows.net
 
-# Nome do banco de dados
-SQL_DATABASE=LogisticaDB
+# Database name
+SQL_DATABASE=LogisticsDB
 
-# Schema do banco de dados
+# Database schema
 SQL_SCHEMA=dbo
 
-# Credenciais de acesso
+# Access credentials
 SQL_USERNAME=admin
-SQL_PASSWORD=SuaSenhaSegura123!
+SQL_PASSWORD=YourSecurePassword123!
 
 # =============================================================================
 # APACHE SPARK CONFIGURATION
 # =============================================================================
 
-# Memória do Driver Spark
+# Spark Driver Memory
 SPARK_DRIVER_MEMORY=4g
 
-# Memória dos Executors Spark
+# Spark Executor Memory
 SPARK_EXECUTOR_MEMORY=4g
 
-# Número de cores por Executor
+# Number of cores per Executor
 SPARK_EXECUTOR_CORES=2
 
-# Número de instâncias de Executors
+# Number of Executor instances
 SPARK_EXECUTOR_INSTANCES=2
 
-# Número de partições para shuffle operations
+# Number of partitions for shuffle operations
 SPARK_SQL_SHUFFLE_PARTITIONS=200
 
-# Paralelismo padrão
+# Default parallelism
 SPARK_DEFAULT_PARALLELISM=8
 
 # =============================================================================
 # AIRFLOW CONFIGURATION
 # =============================================================================
 
-# Ambiente do Airflow (development, staging, production)
+# Airflow environment (development, staging, production)
 AIRFLOW_ENV=development
 
 # Timezone
-AIRFLOW_TIMEZONE=America/Sao_Paulo
+AIRFLOW_TIMEZONE=America/New_York
 
-# Email para notificações (opcional)
-AIRFLOW_ADMIN_EMAIL=admin@empresa.com
+# Email for notifications (optional)
+AIRFLOW_ADMIN_EMAIL=admin@company.com
 
 # =============================================================================
 # LOGGING & MONITORING
 # =============================================================================
 
-# Nível de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+# Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 LOG_LEVEL=INFO
 
-# Diretório para logs
+# Directory for logs
 LOG_DIR=/tmp/logs
 
-# Habilitar logs detalhados do Spark
+# Enable verbose Spark logging
 SPARK_VERBOSE_LOGGING=false
 
 # =============================================================================
 # PERFORMANCE TUNING
 # =============================================================================
 
-# Tamanho do arquivo alvo para Delta Lake (em bytes)
+# Target file size for Delta Lake (in bytes)
 DELTA_TARGET_FILE_SIZE=134217728
 
-# Habilitar otimizações automáticas
+# Enable automatic optimizations
 DELTA_AUTO_OPTIMIZE=true
 DELTA_AUTO_COMPACT=true
 
-# Timeout de rede (em segundos)
+# Network timeout (in seconds)
 NETWORK_TIMEOUT=800
 
 # =============================================================================
 # DEVELOPMENT & TESTING
 # =============================================================================
 
-# Modo de desenvolvimento (habilita logs extras e configurações de debug)
+# Development mode (enables extra logs and debug configurations)
 DEV_MODE=true
 
-# Usar dados sintéticos (para desenvolvimento/testes)
+# Use synthetic data (for development/testing)
 USE_SYNTHETIC_DATA=false
 
-# Número de registros para dados sintéticos
+# Number of records for synthetic data
 SYNTHETIC_DATA_RECORDS=10000
 
 # =============================================================================
 # SECURITY
 # =============================================================================
 
-# Chave de criptografia para dados sensíveis (opcional)
-ENCRYPTION_KEY=sua-chave-de-32-caracteres-aqui
+# Encryption key for sensitive data (optional)
+ENCRYPTION_KEY=your-32-character-key-here
 
-# Habilitar SSL/TLS para conexões
+# Enable SSL/TLS for connections
 ENABLE_SSL=true
 
 # =============================================================================
 # BUSINESS CONFIGURATION
 # =============================================================================
 
-# Configurações específicas do negócio de logística
+# Logistics business specific configurations
 
-# Fuso horário para operações de negócio
-BUSINESS_TIMEZONE=America/Sao_Paulo
+# Business timezone
+BUSINESS_TIMEZONE=America/New_York
 
-# Horário de início das operações (formato HH:MM)
+# Business start time (HH:MM format)
 BUSINESS_START_TIME=06:00
 
-# Horário de fim das operações (formato HH:MM)
+# Business end time (HH:MM format)
 BUSINESS_END_TIME=22:00
 
-# Dias úteis (1=Segunda, 7=Domingo)
+# Business days (1=Monday, 7=Sunday)
 BUSINESS_DAYS=1,2,3,4,5,6
 
 # =============================================================================
-# ALERTAS E NOTIFICAÇÕES
+# ALERTS AND NOTIFICATIONS
 # =============================================================================
 
-# Email para alertas críticos
-ALERT_EMAIL=alertas@empresa.com
+# Email for critical alerts
+ALERT_EMAIL=alerts@company.com
 
-# Webhook para notificações Slack (opcional)
+# Slack webhook URL for notifications (optional)
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
 
-# Threshold para alertas de performance
+# Performance alert threshold
 PERFORMANCE_ALERT_THRESHOLD=90
 
 # =============================================================================
-# BACKUP E RECOVERY
+# BACKUP AND RECOVERY
 # =============================================================================
 
-# Habilitar backup automático
+# Enable automatic backup
 ENABLE_AUTO_BACKUP=true
 
-# Retenção de backups (em dias)
+# Backup retention (in days)
 BACKUP_RETENTION_DAYS=30
 
-# Diretório de backup
+# Backup directory
 BACKUP_DIR=/tmp/backups
 ```
 
 ---
 
-## 🔧 Configuração Passo a Passo
+## 🔧 Step-by-Step Configuration
 
-### **1. Criação do Arquivo**
+### **1. File Creation**
 
 ```bash
-# Copiar template
+# Copy template
 cp .env.example .env
 
-# Editar com suas configurações
-nano .env  # ou vim .env, code .env, etc.
+# Edit with your configurations
+nano .env  # or vim .env, code .env, etc.
 ```
 
 ### **2. Azure Data Lake Storage**
 
-#### **Criar Storage Account**
+#### **Create Storage Account**
 
 ```bash
-# Login no Azure
+# Login to Azure
 az login
 
-# Criar Resource Group
-az group create --name rg-projeto-etl --location brazilsouth
+# Create Resource Group
+az group create --name rg-etl-project --location eastus
 
-# Criar Storage Account
+# Create Storage Account
 az storage account create \
-    --name seuaccountstorage \
-    --resource-group rg-projeto-etl \
-    --location brazilsouth \
+    --name yourstorageaccount \
+    --resource-group rg-etl-project \
+    --location eastus \
     --sku Standard_LRS \
     --kind StorageV2 \
     --hierarchical-namespace true
 ```
 
-#### **Criar Containers**
+#### **Create Containers**
 
 ```bash
-# Criar containers para Medallion Architecture
-az storage container create --name landing --account-name seuaccountstorage
-az storage container create --name bronze --account-name seuaccountstorage
-az storage container create --name silver --account-name seuaccountstorage
-az storage container create --name gold --account-name seuaccountstorage
+# Create containers for Medallion Architecture
+az storage container create --name landing --account-name yourstorageaccount
+az storage container create --name bronze --account-name yourstorageaccount
+az storage container create --name silver --account-name yourstorageaccount
+az storage container create --name gold --account-name yourstorageaccount
 ```
 
-#### **Gerar SAS Token**
+#### **Generate SAS Token**
 
 ```bash
-# Gerar SAS Token válido por 1 ano
+# Generate SAS Token valid for 1 year
 az storage account generate-sas \
-    --account-name seuaccountstorage \
-    --account-key $(az storage account keys list --account-name seuaccountstorage --query '[0].value' -o tsv) \
+    --account-name yourstorageaccount \
+    --account-key $(az storage account keys list --account-name yourstorageaccount --query '[0].value' -o tsv) \
     --expiry 2024-12-31T23:59:59Z \
     --permissions racwdlupitfx \
     --resource-types sco \
@@ -244,119 +244,119 @@ az storage account generate-sas \
 #### **Azure SQL Database**
 
 ```bash
-# Criar SQL Server
+# Create SQL Server
 az sql server create \
-    --name seu-sql-server \
-    --resource-group rg-projeto-etl \
-    --location brazilsouth \
+    --name your-sql-server \
+    --resource-group rg-etl-project \
+    --location eastus \
     --admin-user admin \
-    --admin-password SuaSenhaSegura123!
+    --admin-password YourSecurePassword123!
 
-# Criar Database
+# Create Database
 az sql db create \
-    --resource-group rg-projeto-etl \
-    --server seu-sql-server \
-    --name LogisticaDB \
+    --resource-group rg-etl-project \
+    --server your-sql-server \
+    --name LogisticsDB \
     --service-objective Basic
 ```
 
-#### **Configurar Firewall**
+#### **Configure Firewall**
 
 ```bash
-# Permitir acesso do Azure
+# Allow Azure access
 az sql server firewall-rule create \
-    --resource-group rg-projeto-etl \
-    --server seu-sql-server \
+    --resource-group rg-etl-project \
+    --server your-sql-server \
     --name AllowAzureServices \
     --start-ip-address 0.0.0.0 \
     --end-ip-address 0.0.0.0
 
-# Permitir seu IP local
+# Allow your local IP
 az sql server firewall-rule create \
-    --resource-group rg-projeto-etl \
-    --server seu-sql-server \
+    --resource-group rg-etl-project \
+    --server your-sql-server \
     --name AllowMyIP \
-    --start-ip-address SEU_IP \
-    --end-ip-address SEU_IP
+    --start-ip-address YOUR_IP \
+    --end-ip-address YOUR_IP
 ```
 
 ---
 
-## 📊 Configurações por Ambiente
+## 📊 Environment-Specific Configurations
 
-### **Desenvolvimento Local**
+### **Local Development**
 
 ```bash
-# Recursos limitados para desenvolvimento
+# Limited resources for development
 SPARK_DRIVER_MEMORY=2g
 SPARK_EXECUTOR_MEMORY=2g
 SPARK_EXECUTOR_CORES=1
 SPARK_EXECUTOR_INSTANCES=1
 SPARK_SQL_SHUFFLE_PARTITIONS=50
 
-# Logs verbosos para debug
+# Verbose logs for debugging
 LOG_LEVEL=DEBUG
 SPARK_VERBOSE_LOGGING=true
 DEV_MODE=true
 ```
 
-### **Staging/Teste**
+### **Staging/Testing**
 
 ```bash
-# Recursos médios para testes
+# Medium resources for testing
 SPARK_DRIVER_MEMORY=4g
 SPARK_EXECUTOR_MEMORY=4g
 SPARK_EXECUTOR_CORES=2
 SPARK_EXECUTOR_INSTANCES=2
 SPARK_SQL_SHUFFLE_PARTITIONS=200
 
-# Logs moderados
+# Moderate logs
 LOG_LEVEL=INFO
 DEV_MODE=false
 ```
 
-### **Produção**
+### **Production**
 
 ```bash
-# Recursos maximizados para produção
+# Maximized resources for production
 SPARK_DRIVER_MEMORY=8g
 SPARK_EXECUTOR_MEMORY=8g
 SPARK_EXECUTOR_CORES=4
 SPARK_EXECUTOR_INSTANCES=4
 SPARK_SQL_SHUFFLE_PARTITIONS=400
 
-# Logs otimizados
+# Optimized logs
 LOG_LEVEL=WARNING
 SPARK_VERBOSE_LOGGING=false
 DEV_MODE=false
 
-# Segurança reforçada
+# Enhanced security
 ENABLE_SSL=true
-ENCRYPTION_KEY=sua-chave-segura-de-32-chars
+ENCRYPTION_KEY=your-secure-32-char-key
 ```
 
 ---
 
-## 🔒 Segurança
+## 🔒 Security
 
-### **Proteção de Credenciais**
+### **Credential Protection**
 
 ```bash
-# Nunca commite o arquivo .env
+# Never commit the .env file
 echo ".env" >> .gitignore
 
-# Use variáveis de ambiente do sistema em produção
-export ADLS_SAS_TOKEN="seu_token_aqui"
-export SQL_PASSWORD="sua_senha_aqui"
+# Use system environment variables in production
+export ADLS_SAS_TOKEN="your_token_here"
+export SQL_PASSWORD="your_password_here"
 ```
 
-### **Rotação de Credenciais**
+### **Credential Rotation**
 
 ```bash
-# Gerar novo SAS Token mensalmente
+# Generate new SAS Token monthly
 az storage account generate-sas \
-    --account-name seuaccountstorage \
-    --account-key $(az storage account keys list --account-name seuaccountstorage --query '[0].value' -o tsv) \
+    --account-name yourstorageaccount \
+    --account-key $(az storage account keys list --account-name yourstorageaccount --query '[0].value' -o tsv) \
     --expiry $(date -d "+1 month" +%Y-%m-%dT23:59:59Z) \
     --permissions racwdlupitfx \
     --resource-types sco \
@@ -365,14 +365,14 @@ az storage account generate-sas \
 
 ---
 
-## 🧪 Validação da Configuração
+## 🧪 Configuration Validation
 
-### **Script de Teste**
+### **Test Script**
 
 ```python
 #!/usr/bin/env python3
 """
-Script para validar configuração das variáveis de ambiente
+Script to validate environment variable configuration
 """
 
 import os
@@ -396,14 +396,14 @@ def validate_config():
             missing_vars.append(var)
     
     if missing_vars:
-        print(f"❌ Variáveis faltando: {', '.join(missing_vars)}")
+        print(f"❌ Missing variables: {', '.join(missing_vars)}")
         return False
     
-    print("✅ Todas as variáveis obrigatórias estão configuradas")
+    print("✅ All required variables are configured")
     return True
 
 def test_azure_connection():
-    """Testa conexão com Azure Storage"""
+    """Test Azure Storage connection"""
     try:
         from azure.storage.blob import BlobServiceClient
         
@@ -415,17 +415,17 @@ def test_azure_connection():
             credential=sas_token
         )
         
-        # Listar containers
+        # List containers
         containers = list(client.list_containers())
-        print(f"✅ Conexão Azure OK. Containers encontrados: {len(containers)}")
+        print(f"✅ Azure connection OK. Containers found: {len(containers)}")
         return True
         
     except Exception as e:
-        print(f"❌ Erro na conexão Azure: {e}")
+        print(f"❌ Azure connection error: {e}")
         return False
 
 def test_sql_connection():
-    """Testa conexão com SQL Server"""
+    """Test SQL Server connection"""
     try:
         from sqlalchemy import create_engine
         from urllib.parse import quote_plus
@@ -438,31 +438,31 @@ def test_sql_connection():
         conn_str = f"mssql+pyodbc://{username}:{password}@{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
         engine = create_engine(conn_str)
         
-        # Teste simples
+        # Simple test
         with engine.connect() as conn:
             result = conn.execute("SELECT 1 as test")
-            print("✅ Conexão SQL Server OK")
+            print("✅ SQL Server connection OK")
             return True
             
     except Exception as e:
-        print(f"❌ Erro na conexão SQL Server: {e}")
+        print(f"❌ SQL Server connection error: {e}")
         return False
 
 if __name__ == "__main__":
-    print("🔍 Validando configuração...")
+    print("🔍 Validating configuration...")
     
     if validate_config():
-        print("\n🧪 Testando conexões...")
+        print("\n🧪 Testing connections...")
         test_azure_connection()
         test_sql_connection()
     
-    print("\n✅ Validação concluída!")
+    print("\n✅ Validation complete!")
 ```
 
-### **Executar Validação**
+### **Run Validation**
 
 ```bash
-# Salvar como validate_config.py e executar
+# Save as validate_config.py and run
 python validate_config.py
 ```
 
@@ -470,48 +470,48 @@ python validate_config.py
 
 ## 📝 Troubleshooting
 
-### **Problemas Comuns**
+### **Common Issues**
 
-#### **1. Token SAS Inválido**
+#### **1. Invalid SAS Token**
 
 ```bash
-# Erro: "Server failed to authenticate the request"
-# Solução: Gerar novo token SAS
+# Error: "Server failed to authenticate the request"
+# Solution: Generate new SAS token
 
 az storage account generate-sas \
-    --account-name seuaccountstorage \
-    --account-key $(az storage account keys list --account-name seuaccountstorage --query '[0].value' -o tsv) \
+    --account-name yourstorageaccount \
+    --account-key $(az storage account keys list --account-name yourstorageaccount --query '[0].value' -o tsv) \
     --expiry 2024-12-31T23:59:59Z \
     --permissions racwdlupitfx \
     --resource-types sco \
     --services bfqt
 ```
 
-#### **2. Conexão SQL Server Negada**
+#### **2. SQL Server Connection Denied**
 
 ```bash
-# Erro: "Login failed for user"
-# Solução: Verificar firewall e credenciais
+# Error: "Login failed for user"
+# Solution: Check firewall and credentials
 
-# Listar regras de firewall
+# List firewall rules
 az sql server firewall-rule list \
-    --resource-group rg-projeto-etl \
-    --server seu-sql-server
+    --resource-group rg-etl-project \
+    --server your-sql-server
 
-# Adicionar seu IP
+# Add your IP
 az sql server firewall-rule create \
-    --resource-group rg-projeto-etl \
-    --server seu-sql-server \
+    --resource-group rg-etl-project \
+    --server your-sql-server \
     --name AllowMyIP \
     --start-ip-address $(curl -s ifconfig.me) \
     --end-ip-address $(curl -s ifconfig.me)
 ```
 
-#### **3. Erro de Memória Spark**
+#### **3. Spark Memory Error**
 
 ```bash
-# Erro: "OutOfMemoryError"
-# Solução: Reduzir configurações de memória
+# Error: "OutOfMemoryError"
+# Solution: Reduce memory configurations
 
 SPARK_DRIVER_MEMORY=2g
 SPARK_EXECUTOR_MEMORY=2g
@@ -520,7 +520,7 @@ SPARK_SQL_SHUFFLE_PARTITIONS=50
 
 ---
 
-## 📚 Referências
+## 📚 References
 
 - [Azure Storage SAS Tokens](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview)
 - [Azure SQL Database](https://docs.microsoft.com/en-us/azure/azure-sql/database/)
@@ -529,5 +529,5 @@ SPARK_SQL_SHUFFLE_PARTITIONS=50
 
 ---
 
-!!! warning "Importante"
-    Nunca commite credenciais reais no repositório. Use sempre o arquivo `.env` local ou variáveis de ambiente do sistema em produção. 
+!!! warning "Important"
+    Never commit real credentials to the repository. Always use the local `.env` file or system environment variables in production.

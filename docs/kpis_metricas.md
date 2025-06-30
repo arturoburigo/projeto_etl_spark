@@ -1,366 +1,366 @@
-# 📈 KPIs e Métricas
+# 📈 KPIs and Metrics
 
-## 📋 Visão Geral
+## 📋 Overview
 
-O sistema calcula automaticamente um conjunto abrangente de **KPIs (Key Performance Indicators)** e **métricas operacionais** que fornecem insights valiosos sobre a performance do negócio de logística e transporte. Todos os indicadores são atualizados automaticamente através do pipeline ETL e armazenados na camada Gold para consumo por ferramentas de BI.
+The system automatically calculates a comprehensive set of **KPIs (Key Performance Indicators)** and **operational metrics** that provide valuable insights into the logistics and transportation business performance. All indicators are automatically updated through the ETL pipeline and stored in the Gold layer for consumption by BI tools.
 
 ---
 
-## 🎯 KPIs Principais
+## 🎯 Main KPIs
 
 ### 🚚 **1. On-Time Delivery (OTD)**
 
-**Descrição**: Percentual de entregas realizadas dentro do prazo estabelecido.
+**Description**: Percentage of deliveries completed within the established deadline.
 
-**Fórmula**: 
+**Formula**: 
 ```sql
-OTD = (Entregas no Prazo / Total de Entregas) × 100
+OTD = (On-Time Deliveries / Total Deliveries) × 100
 ```
 
-**Implementação**:
+**Implementation**:
 ```python
-kpi_otd = fato_entregas.withColumn("on_time",
-    (col("data_fim_real_entrega_key") <= col("data_previsao_fim_entrega_key")) | 
-    (col("data_previsao_fim_entrega_key").isNull())
+kpi_otd = fact_deliveries.withColumn("on_time",
+    (col("actual_end_date_key") <= col("estimated_end_date_key")) | 
+    (col("estimated_end_date_key").isNull())
 ).agg(
     (sum(when(col("on_time") == True, 1).otherwise(0)) / count("*") * 100)
-    .alias("percentual_entregas_no_prazo")
+    .alias("on_time_delivery_percentage")
 )
 ```
 
-**Metas de Negócio**:
-- 🎯 **Excelente**: > 95%
-- ✅ **Bom**: 90-95%
-- ⚠️ **Atenção**: 80-90%
-- 🚨 **Crítico**: < 80%
+**Business Targets**:
+- 🎯 **Excellent**: > 95%
+- ✅ **Good**: 90-95%
+- ⚠️ **Warning**: 80-90%
+- 🚨 **Critical**: < 80%
 
-**Frequência de Atualização**: Diária  
-**Granularidade**: Por dia, semana, mês, cliente, rota
+**Update Frequency**: Daily  
+**Granularity**: By day, week, month, customer, route
 
 ---
 
-### 💰 **2. Custo Médio de Frete por Rota**
+### 💰 **2. Average Freight Cost per Route**
 
-**Descrição**: Custo médio de transporte por quilômetro em cada rota.
+**Description**: Average transportation cost per kilometer on each route.
 
-**Fórmula**: 
+**Formula**: 
 ```sql
-Custo por KM = Valor Total do Frete / Distância da Rota (KM)
+Cost per KM = Total Freight Value / Route Distance (KM)
 ```
 
-**Implementação**:
+**Implementation**:
 ```python
-kpi_custo_rota = fato_entregas.join(dim_rota, 
-    fato_entregas["id_rota_origem"] == dim_rota["id_rota_origem"], "left"
+kpi_route_cost = fact_deliveries.join(dim_route, 
+    fact_deliveries["route_origin_id"] == dim_route["route_origin_id"], "left"
 ).groupBy(
-    dim_rota["nome_rota"], 
-    dim_rota["origem"], 
-    dim_rota["destino"],
-    dim_rota["distancia_km"]
+    dim_route["route_name"], 
+    dim_route["origin"], 
+    dim_route["destination"],
+    dim_route["distance_km"]
 ).agg(
-    avg("valor_frete").alias("custo_medio_frete"),
-    (avg("valor_frete") / first("distancia_km")).alias("custo_por_km")
+    avg("freight_value").alias("average_freight_cost"),
+    (avg("freight_value") / first("distance_km")).alias("cost_per_km")
 )
 ```
 
-**Análises Disponíveis**:
-- 📊 **Por Rota**: Identificação de rotas mais/menos rentáveis
-- 📈 **Tendência Temporal**: Evolução dos custos ao longo do tempo
-- 🔍 **Benchmarking**: Comparação entre rotas similares
-- 💡 **Otimização**: Identificação de oportunidades de melhoria
+**Available Analysis**:
+- 📊 **By Route**: Identification of most/least profitable routes
+- 📈 **Temporal Trend**: Cost evolution over time
+- 🔍 **Benchmarking**: Comparison between similar routes
+- 💡 **Optimization**: Identification of improvement opportunities
 
-**Frequência de Atualização**: Semanal  
-**Granularidade**: Por rota, região, tipo de carga
+**Update Frequency**: Weekly  
+**Granularity**: By route, region, cargo type
 
 ---
 
-### 🚛 **3. Utilização da Frota**
+### 🚛 **3. Fleet Utilization**
 
-**Descrição**: Análise da utilização dos veículos por tipo e performance.
+**Description**: Analysis of vehicle utilization by type and performance.
 
-**Métricas Calculadas**:
-- Total de entregas por tipo de veículo
-- Taxa de ocupação da frota
-- Quilometragem média por veículo
-- Tempo médio em trânsito
+**Calculated Metrics**:
+- Total deliveries per vehicle type
+- Fleet occupancy rate
+- Average mileage per vehicle
+- Average transit time
 
-**Implementação**:
+**Implementation**:
 ```python
-kpi_frota = fato_entregas.join(dim_veiculo, 
-    fato_entregas["id_veiculo_origem"] == dim_veiculo["id_veiculo_origem"], "left"
+kpi_fleet = fact_deliveries.join(dim_vehicle, 
+    fact_deliveries["vehicle_origin_id"] == dim_vehicle["vehicle_origin_id"], "left"
 ).groupBy(
-    dim_veiculo["tipo_veiculo"],
-    dim_veiculo["marca"],
-    dim_veiculo["capacidade_carga_kg"]
+    dim_vehicle["vehicle_type"],
+    dim_vehicle["brand"],
+    dim_vehicle["cargo_capacity_kg"]
 ).agg(
-    count("*").alias("total_entregas"),
-    sum("peso_carga_kg").alias("peso_total_transportado"),
-    avg("peso_carga_kg").alias("peso_medio_por_entrega"),
-    (sum("peso_carga_kg") / first("capacidade_carga_kg") * 100).alias("taxa_ocupacao_media")
+    count("*").alias("total_deliveries"),
+    sum("cargo_weight_kg").alias("total_weight_transported"),
+    avg("cargo_weight_kg").alias("average_weight_per_delivery"),
+    (sum("cargo_weight_kg") / first("cargo_capacity_kg") * 100).alias("average_occupancy_rate")
 )
 ```
 
-**Insights Gerados**:
-- 🎯 **Eficiência por Tipo**: Caminhões vs Vans vs Utilitários
-- 📊 **Capacidade**: Taxa de ocupação da carga
-- 🔄 **Rotatividade**: Frequência de uso por veículo
-- 💰 **ROI**: Retorno sobre investimento por veículo
+**Generated Insights**:
+- 🎯 **Efficiency by Type**: Trucks vs Vans vs Utility vehicles
+- 📊 **Capacity**: Cargo occupancy rate
+- 🔄 **Turnover**: Usage frequency per vehicle
+- 💰 **ROI**: Return on investment per vehicle
 
-**Frequência de Atualização**: Mensal  
-**Granularidade**: Por veículo, tipo, marca, região
+**Update Frequency**: Monthly  
+**Granularity**: By vehicle, type, brand, region
 
 ---
 
-### 💼 **4. Revenue por Cliente**
+### 💼 **4. Revenue per Customer**
 
-**Descrição**: Valor total de frete gerado por cada cliente e análise de rentabilidade.
+**Description**: Total freight value generated by each customer and profitability analysis.
 
-**Métricas Calculadas**:
-- Valor total de frete por cliente
-- Ticket médio por entrega
-- Frequência de envios
-- Rentabilidade por cliente
+**Calculated Metrics**:
+- Total freight value per customer
+- Average ticket per delivery
+- Shipping frequency
+- Customer profitability
 
-**Implementação**:
+**Implementation**:
 ```python
-kpi_cliente = fato_entregas.join(dim_cliente, 
-    fato_entregas["id_cliente_remetente_origem"] == dim_cliente["id_cliente_origem"], "left"
+kpi_customer = fact_deliveries.join(dim_customer, 
+    fact_deliveries["sender_customer_origin_id"] == dim_customer["customer_origin_id"], "left"
 ).groupBy(
-    dim_cliente["nome_cliente"],
-    dim_cliente["tipo_cliente"],
-    dim_cliente["cidade"],
-    dim_cliente["estado"]
+    dim_customer["customer_name"],
+    dim_customer["customer_type"],
+    dim_customer["city"],
+    dim_customer["state"]
 ).agg(
-    sum("valor_frete").alias("valor_total_frete"),
-    count("*").alias("total_entregas"),
-    avg("valor_frete").alias("ticket_medio"),
-    sum("peso_carga_kg").alias("peso_total_enviado")
+    sum("freight_value").alias("total_freight_value"),
+    count("*").alias("total_deliveries"),
+    avg("freight_value").alias("average_ticket"),
+    sum("cargo_weight_kg").alias("total_weight_shipped")
 )
 ```
 
-**Segmentação de Clientes**:
-- 🥇 **Premium**: > R$ 50.000/mês
-- 🥈 **Gold**: R$ 20.000 - R$ 50.000/mês  
-- 🥉 **Silver**: R$ 5.000 - R$ 20.000/mês
-- 📊 **Standard**: < R$ 5.000/mês
+**Customer Segmentation**:
+- 🥇 **Premium**: > $50,000/month
+- 🥈 **Gold**: $20,000 - $50,000/month  
+- 🥉 **Silver**: $5,000 - $20,000/month
+- 📊 **Standard**: < $5,000/month
 
-**Frequência de Atualização**: Mensal  
-**Granularidade**: Por cliente, segmento, região, tipo
+**Update Frequency**: Monthly  
+**Granularity**: By customer, segment, region, type
 
 ---
 
-## 📊 Métricas Operacionais
+## 📊 Operational Metrics
 
-### 📅 **Métricas Temporais**
+### 📅 **Temporal Metrics**
 
-#### **Total de Entregas Mensal**
+#### **Monthly Total Deliveries**
 ```python
-metrica_entregas_mes = fato_entregas.join(dim_data, 
-    fato_entregas["data_inicio_entrega_key"] == dim_data["data_key"], "left"
+metric_deliveries_month = fact_deliveries.join(dim_date, 
+    fact_deliveries["delivery_start_date_key"] == dim_date["date_key"], "left"
 ).groupBy(
-    dim_data["ano"], 
-    dim_data["mes"],
-    dim_data["nome_mes"]
+    dim_date["year"], 
+    dim_date["month"],
+    dim_date["month_name"]
 ).agg(
-    count("*").alias("total_entregas"),
-    sum("valor_frete").alias("receita_total"),
-    avg("valor_frete").alias("ticket_medio")
-).orderBy("ano", "mes")
+    count("*").alias("total_deliveries"),
+    sum("freight_value").alias("total_revenue"),
+    avg("freight_value").alias("average_ticket")
+).orderBy("year", "month")
 ```
 
-#### **Peso Total Transportado por Mês**
+#### **Total Weight Transported per Month**
 ```python
-metrica_peso_mes = fato_entregas.join(dim_data, 
-    fato_entregas["data_inicio_entrega_key"] == dim_data["data_key"], "left"
+metric_weight_month = fact_deliveries.join(dim_date, 
+    fact_deliveries["delivery_start_date_key"] == dim_date["date_key"], "left"
 ).groupBy(
-    dim_data["ano"], 
-    dim_data["mes"]
+    dim_date["year"], 
+    dim_date["month"]
 ).agg(
-    sum("peso_carga_kg").alias("peso_total_kg"),
-    avg("peso_carga_kg").alias("peso_medio_kg"),
-    count("*").alias("total_entregas")
-).orderBy("ano", "mes")
+    sum("cargo_weight_kg").alias("total_weight_kg"),
+    avg("cargo_weight_kg").alias("average_weight_kg"),
+    count("*").alias("total_deliveries")
+).orderBy("year", "month")
 ```
 
-### 🔧 **Métricas de Manutenção**
+### 🔧 **Maintenance Metrics**
 
-#### **Custo de Manutenção por Veículo**
+#### **Maintenance Cost per Vehicle**
 ```python
-metrica_manutencao = fato_manutencoes.join(dim_veiculo,
-    fato_manutencoes["id_veiculo_origem"] == dim_veiculo["id_veiculo_origem"], "left"
+metric_maintenance = fact_maintenance.join(dim_vehicle,
+    fact_maintenance["vehicle_origin_id"] == dim_vehicle["vehicle_origin_id"], "left"
 ).groupBy(
-    dim_veiculo["placa"],
-    dim_veiculo["modelo"],
-    dim_veiculo["ano_fabricacao"]
+    dim_vehicle["license_plate"],
+    dim_vehicle["model"],
+    dim_vehicle["manufacture_year"]
 ).agg(
-    sum("custo_manutencao").alias("custo_total_manutencao"),
-    count("*").alias("total_manutencoes"),
-    avg("custo_manutencao").alias("custo_medio_manutencao"),
-    sum("tempo_parado_horas").alias("tempo_total_parado")
+    sum("maintenance_cost").alias("total_maintenance_cost"),
+    count("*").alias("total_maintenances"),
+    avg("maintenance_cost").alias("average_maintenance_cost"),
+    sum("downtime_hours").alias("total_downtime")
 )
 ```
 
-#### **Eficiência de Combustível**
+#### **Fuel Efficiency**
 ```python
-metrica_combustivel = fato_abastecimentos.join(dim_veiculo,
-    fato_abastecimentos["id_veiculo_origem"] == dim_veiculo["id_veiculo_origem"], "left"
+metric_fuel = fact_refueling.join(dim_vehicle,
+    fact_refueling["vehicle_origin_id"] == dim_vehicle["vehicle_origin_id"], "left"
 ).groupBy(
-    dim_veiculo["placa"],
-    dim_veiculo["tipo_veiculo"]
+    dim_vehicle["license_plate"],
+    dim_vehicle["vehicle_type"]
 ).agg(
-    sum("litros").alias("total_litros"),
-    sum("valor_total").alias("custo_total_combustivel"),
-    avg("valor_total" / "litros").alias("preco_medio_por_litro")
+    sum("liters").alias("total_liters"),
+    sum("total_value").alias("total_fuel_cost"),
+    avg("total_value" / "liters").alias("average_price_per_liter")
 )
 ```
 
 ---
 
-## 📈 Dashboards e Visualizações
+## 📈 Dashboards and Visualizations
 
-### 🎛️ **Dashboard Executivo**
+### 🎛️ **Executive Dashboard**
 
-**KPIs Principais**:
+**Main KPIs**:
 - 📊 On-Time Delivery (gauge chart)
-- 💰 Revenue mensal (line chart)
-- 🚛 Utilização da frota (bar chart)
-- 📈 Tendências operacionais (combo chart)
+- 💰 Monthly revenue (line chart)
+- 🚛 Fleet utilization (bar chart)
+- 📈 Operational trends (combo chart)
 
-**Filtros Disponíveis**:
-- 📅 Período (dia, semana, mês, ano)
-- 🌍 Região (estado, cidade)
-- 👥 Cliente (individual, segmento)
-- 🚚 Tipo de veículo
+**Available Filters**:
+- 📅 Period (day, week, month, year)
+- 🌍 Region (state, city)
+- 👥 Customer (individual, segment)
+- 🚚 Vehicle type
 
-### 📊 **Dashboard Operacional**
+### 📊 **Operational Dashboard**
 
-**Métricas Detalhadas**:
-- 🗺️ Mapa de entregas por região
-- ⏱️ Tempo médio de entrega por rota
-- 📦 Volume de carga por tipo
-- 🔧 Status de manutenção da frota
+**Detailed Metrics**:
+- 🗺️ Delivery map by region
+- ⏱️ Average delivery time by route
+- 📦 Cargo volume by type
+- 🔧 Fleet maintenance status
 
-### 💰 **Dashboard Financeiro**
+### 💰 **Financial Dashboard**
 
-**Análises Financeiras**:
-- 💵 Receita por cliente/região/período
-- 📊 Margem de lucro por rota
-- 💸 Custos operacionais (combustível, manutenção, multas)
-- 📈 Projeções e tendências
+**Financial Analysis**:
+- 💵 Revenue by customer/region/period
+- 📊 Profit margin by route
+- 💸 Operational costs (fuel, maintenance, fines)
+- 📈 Projections and trends
 
 ---
 
-## 🎯 Alertas e Notificações
+## 🎯 Alerts and Notifications
 
-### 🚨 **Alertas Críticos**
+### 🚨 **Critical Alerts**
 
 **On-Time Delivery < 80%**:
 ```python
 if otd_percentage < 80:
-    send_alert("CRÍTICO: OTD abaixo de 80%", 
-               recipients=["gerencia@empresa.com"])
+    send_alert("CRITICAL: OTD below 80%", 
+               recipients=["management@company.com"])
 ```
 
-**Custo por KM acima do benchmark**:
+**Cost per KM above benchmark**:
 ```python
-if custo_km > benchmark_custo_km * 1.2:
-    send_alert("ATENÇÃO: Custo por KM 20% acima do benchmark", 
-               recipients=["operacoes@empresa.com"])
+if cost_km > benchmark_cost_km * 1.2:
+    send_alert("WARNING: Cost per KM 20% above benchmark", 
+               recipients=["operations@company.com"])
 ```
 
-### ⚠️ **Alertas de Atenção**
+### ⚠️ **Warning Alerts**
 
-- 📈 **Volume anômalo** de entregas (> 150% da média)
-- 🔧 **Aumento nos custos** de manutenção (> 20% mês anterior)
-- ⛽ **Consumo excessivo** de combustível por veículo
-- 🚨 **Aumento nas multas** por motorista/veículo
+- 📈 **Anomalous delivery volume** (> 150% of average)
+- 🔧 **Increase in maintenance costs** (> 20% from previous month)
+- ⛽ **Excessive fuel consumption** per vehicle
+- 🚨 **Increase in fines** per driver/vehicle
 
 ---
 
-## 🔍 Análises Avançadas
+## 🔍 Advanced Analytics
 
-### 📊 **Análise de Tendências**
+### 📊 **Trend Analysis**
 
-**Sazonalidade**:
+**Seasonality**:
 ```python
-# Análise de padrões sazonais
-sazonalidade = fato_entregas.join(dim_data,
-    fato_entregas["data_inicio_entrega_key"] == dim_data["data_key"], "left"
+# Seasonal pattern analysis
+seasonality = fact_deliveries.join(dim_date,
+    fact_deliveries["delivery_start_date_key"] == dim_date["date_key"], "left"
 ).groupBy(
-    dim_data["mes"],
-    dim_data["nome_mes"]
+    dim_date["month"],
+    dim_date["month_name"]
 ).agg(
-    count("*").alias("total_entregas"),
-    avg("valor_frete").alias("ticket_medio")
-).orderBy("mes")
+    count("*").alias("total_deliveries"),
+    avg("freight_value").alias("average_ticket")
+).orderBy("month")
 ```
 
-**Crescimento YoY (Year over Year)**:
+**YoY Growth (Year over Year)**:
 ```python
-# Comparação ano sobre ano
-crescimento_yoy = fato_entregas.join(dim_data,
-    fato_entregas["data_inicio_entrega_key"] == dim_data["data_key"], "left"
+# Year over year comparison
+yoy_growth = fact_deliveries.join(dim_date,
+    fact_deliveries["delivery_start_date_key"] == dim_date["date_key"], "left"
 ).groupBy(
-    dim_data["ano"],
-    dim_data["mes"]
+    dim_date["year"],
+    dim_date["month"]
 ).agg(
-    count("*").alias("total_entregas"),
-    sum("valor_frete").alias("receita_total")
-).withColumn("crescimento_percentual", 
-    (col("receita_total") - lag("receita_total").over(window)) / 
-    lag("receita_total").over(window) * 100
+    count("*").alias("total_deliveries"),
+    sum("freight_value").alias("total_revenue")
+).withColumn("growth_percentage", 
+    (col("total_revenue") - lag("total_revenue").over(window)) / 
+    lag("total_revenue").over(window) * 100
 )
 ```
 
-### 🎯 **Análise de Performance**
+### 🎯 **Performance Analysis**
 
-**Eficiência por Motorista**:
+**Driver Efficiency**:
 ```python
-performance_motorista = fato_entregas.join(dim_motorista,
-    fato_entregas["id_motorista_origem"] == dim_motorista["id_motorista_origem"], "left"
+driver_performance = fact_deliveries.join(dim_driver,
+    fact_deliveries["driver_origin_id"] == dim_driver["driver_origin_id"], "left"
 ).groupBy(
-    dim_motorista["nome_motorista"]
+    dim_driver["driver_name"]
 ).agg(
-    count("*").alias("total_entregas"),
-    (sum(when(col("status_entrega") == "Entregue", 1).otherwise(0)) / count("*") * 100)
-    .alias("taxa_sucesso"),
-    avg("valor_frete").alias("receita_media_por_entrega")
+    count("*").alias("total_deliveries"),
+    (sum(when(col("delivery_status") == "Delivered", 1).otherwise(0)) / count("*") * 100)
+    .alias("success_rate"),
+    avg("freight_value").alias("average_revenue_per_delivery")
 )
 ```
 
 ---
 
-## 📋 Catálogo de KPIs
+## 📋 KPI Catalog
 
-| KPI | Descrição | Fórmula | Frequência | Meta |
-|-----|-----------|---------|------------|------|
-| **On-Time Delivery** | % entregas no prazo | (Entregas no Prazo / Total) × 100 | Diária | > 95% |
-| **Custo por KM** | Custo médio por quilômetro | Valor Frete / Distância KM | Semanal | < R$ 2,50/km |
-| **Taxa de Ocupação** | % capacidade utilizada | Peso Transportado / Capacidade × 100 | Mensal | > 80% |
-| **Revenue por Cliente** | Receita gerada por cliente | Σ Valor Frete por Cliente | Mensal | Crescimento 10% |
-| **Ticket Médio** | Valor médio por entrega | Σ Valor Frete / Nº Entregas | Mensal | > R$ 500 |
-| **Tempo Médio Entrega** | Tempo médio para entrega | Média (Data Fim - Data Início) | Semanal | < 48h |
-| **Taxa de Avarias** | % entregas com problemas | Entregas com Problema / Total × 100 | Mensal | < 2% |
-| **Consumo Combustível** | Litros por 100km | (Litros / KM Rodados) × 100 | Mensal | < 35L/100km |
-
----
-
-## 🚀 Próximos Desenvolvimentos
-
-### 📊 **KPIs Planejados**
-
-- 🤖 **Predição de Demanda**: ML para prever volume de entregas
-- 🎯 **Score de Satisfação**: Baseado em feedback dos clientes  
-- 🌱 **Pegada de Carbono**: Emissões de CO₂ por entrega
-- 📱 **NPS Logístico**: Net Promoter Score específico para logística
-
-### 🔮 **Análises Avançadas**
-
-- 🧠 **Machine Learning**: Modelos preditivos para otimização de rotas
-- 📈 **Forecasting**: Previsão de demanda e capacidade
-- 🎯 **Otimização**: Algoritmos para alocação ótima de recursos
-- 📊 **Real-time Analytics**: Dashboards em tempo real
+| KPI | Description | Formula | Frequency | Target |
+|-----|-------------|---------|-----------|--------|
+| **On-Time Delivery** | % deliveries on time | (On-Time Deliveries / Total) × 100 | Daily | > 95% |
+| **Cost per KM** | Average cost per kilometer | Freight Value / Distance KM | Weekly | < $2.50/km |
+| **Occupancy Rate** | % capacity utilized | Weight Transported / Capacity × 100 | Monthly | > 80% |
+| **Revenue per Customer** | Revenue generated per customer | Σ Freight Value per Customer | Monthly | 10% Growth |
+| **Average Ticket** | Average value per delivery | Σ Freight Value / # Deliveries | Monthly | > $500 |
+| **Average Delivery Time** | Average time for delivery | Avg (End Date - Start Date) | Weekly | < 48h |
+| **Damage Rate** | % deliveries with issues | Deliveries with Issues / Total × 100 | Monthly | < 2% |
+| **Fuel Consumption** | Liters per 100km | (Liters / KM Driven) × 100 | Monthly | < 35L/100km |
 
 ---
 
-Todos esses KPIs e métricas são calculados automaticamente pelo pipeline ETL e disponibilizados na camada Gold para consumo por ferramentas de Business Intelligence, garantindo insights precisos e atualizados para tomada de decisões estratégicas. 
+## 🚀 Future Developments
+
+### 📊 **Planned KPIs**
+
+- 🤖 **Demand Prediction**: ML to predict delivery volume
+- 🎯 **Satisfaction Score**: Based on customer feedback  
+- 🌱 **Carbon Footprint**: CO₂ emissions per delivery
+- 📱 **Logistics NPS**: Net Promoter Score specific to logistics
+
+### 🔮 **Advanced Analytics**
+
+- 🧠 **Machine Learning**: Predictive models for route optimization
+- 📈 **Forecasting**: Demand and capacity prediction
+- 🎯 **Optimization**: Algorithms for optimal resource allocation
+- 📊 **Real-time Analytics**: Real-time dashboards
+
+---
+
+All these KPIs and metrics are automatically calculated by the ETL pipeline and made available in the Gold layer for consumption by Business Intelligence tools, ensuring accurate and up-to-date insights for strategic decision-making.

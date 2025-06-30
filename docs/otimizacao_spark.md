@@ -1,19 +1,19 @@
-# ⚡ Otimização do Apache Spark
+# ⚡ Apache Spark Optimization
 
-## 📋 Visão Geral
+## 📋 Overview
 
-A otimização da conexão e configuração do Apache Spark é crucial para obter máxima performance no processamento de dados. Este guia apresenta as melhores práticas e configurações otimizadas para o projeto ETL.
+Optimizing Apache Spark connection and configuration is crucial for achieving maximum performance in data processing. This guide presents best practices and optimized configurations for the ETL project.
 
 ---
 
-## 🔧 Configurações de Conexão Otimizadas
+## 🔧 Optimized Connection Configurations
 
-### **SparkSession Otimizada**
+### **Optimized SparkSession**
 
 ```python
-def create_optimized_spark_session(app_name="projeto_etl_spark"):
+def create_optimized_spark_session(app_name="etl_project_spark"):
     """
-    Cria uma SparkSession otimizada para o projeto ETL
+    Creates an optimized SparkSession for the ETL project
     """
     return SparkSession.builder \
         .appName(app_name) \
@@ -56,60 +56,60 @@ def create_optimized_spark_session(app_name="projeto_etl_spark"):
 
 ---
 
-## 🚀 Otimizações por Ambiente
+## 🚀 Environment-Specific Optimizations
 
-### **Desenvolvimento Local**
+### **Local Development**
 
 ```python
 def spark_config_development():
-    """Configuração otimizada para desenvolvimento local"""
+    """Optimized configuration for local development"""
     return {
-        # Recursos limitados para desenvolvimento
+        # Limited resources for development
         "spark.driver.memory": "2g",
         "spark.executor.memory": "2g", 
         "spark.executor.cores": "1",
         "spark.executor.instances": "1",
         
-        # Paralelismo reduzido
+        # Reduced parallelism
         "spark.default.parallelism": "4",
         "spark.sql.shuffle.partitions": "50",
         
-        # Logs mais verbosos para debug
+        # More verbose logs for debugging
         "spark.sql.adaptive.logLevel": "INFO",
         "spark.eventLog.enabled": "true",
         "spark.eventLog.dir": "/tmp/spark-events",
         
-        # Checkpoint local
+        # Local checkpoint
         "spark.sql.streaming.checkpointLocation": "/tmp/spark-checkpoints"
     }
 ```
 
-### **Produção/Azure**
+### **Production/Azure**
 
 ```python
 def spark_config_production():
-    """Configuração otimizada para produção no Azure"""
+    """Optimized configuration for production on Azure"""
     return {
-        # Recursos maximizados
+        # Maximized resources
         "spark.driver.memory": "8g",
         "spark.driver.maxResultSize": "4g",
         "spark.executor.memory": "8g",
         "spark.executor.cores": "4", 
         "spark.executor.instances": "4",
         
-        # Paralelismo alto
+        # High parallelism
         "spark.default.parallelism": "16",
         "spark.sql.shuffle.partitions": "400",
         
-        # Otimizações de rede para Azure
+        # Network optimizations for Azure
         "spark.network.timeout": "1200s",
         "spark.sql.broadcastTimeout": "1200s",
         
-        # Delta Lake otimizações
+        # Delta Lake optimizations
         "spark.databricks.delta.optimizeWrite.enabled": "true",
         "spark.databricks.delta.autoCompact.enabled": "true",
         
-        # Cache otimizado
+        # Optimized cache
         "spark.sql.cache.serializer": "org.apache.spark.sql.execution.columnar.InMemoryTableScanExec",
         "spark.sql.columnVector.offheap.enabled": "true"
     }
@@ -117,46 +117,46 @@ def spark_config_production():
 
 ---
 
-## ☁️ Integração com Azure Otimizada
+## ☁️ Optimized Azure Integration
 
-### **Configuração Azure Storage**
+### **Azure Storage Configuration**
 
 ```python
 def configure_azure_storage(spark, account_name, sas_token, containers):
     """
-    Configura conexão otimizada com Azure Storage
+    Configures optimized connection with Azure Storage
     """
-    # Configuração base do Azure
+    # Azure base configuration
     spark.conf.set(f"fs.azure.account.auth.type.{account_name}.dfs.core.windows.net", "SAS")
     spark.conf.set(f"fs.azure.sas.token.provider.type.{account_name}.dfs.core.windows.net", 
                    "org.apache.hadoop.fs.azurebfs.sas.FixedSASTokenProvider")
     
-    # Configurar SAS token para cada container
+    # Configure SAS token for each container
     for container in containers:
         spark.conf.set(f"fs.azure.sas.{container}.{account_name}.blob.core.windows.net", sas_token)
     
-    # Otimizações específicas do Azure
+    # Azure-specific optimizations
     spark.conf.set("fs.azure.io.retry.max.retries", "10")
     spark.conf.set("fs.azure.io.retry.backoff.interval", "3s")
     spark.conf.set("fs.azure.block.size", "268435456")  # 256MB
     spark.conf.set("fs.azure.write.request.size", "67108864")  # 64MB
     
-    # Buffer otimizado
+    # Optimized buffer
     spark.conf.set("fs.azure.read.request.size", "67108864")  # 64MB
     spark.conf.set("fs.azure.account.keyprovider.{account_name}.dfs.core.windows.net", 
                    "org.apache.hadoop.fs.azurebfs.services.SimpleKeyProvider")
 
-# Exemplo de uso
+# Usage example
 spark = create_optimized_spark_session()
-configure_azure_storage(spark, "seuaccount", "seu_sas_token", 
+configure_azure_storage(spark, "youraccount", "your_sas_token", 
                        ["landing", "bronze", "silver", "gold"])
 ```
 
-### **Pool de Conexões Azure**
+### **Azure Connection Pool**
 
 ```python
 class AzureConnectionPool:
-    """Pool de conexões reutilizáveis para Azure"""
+    """Reusable connection pool for Azure"""
     
     def __init__(self, account_name, sas_token, max_connections=10):
         self.account_name = account_name
@@ -166,7 +166,7 @@ class AzureConnectionPool:
         self._active_connections = 0
     
     def get_blob_client(self, container_name):
-        """Obtém cliente blob do pool"""
+        """Gets blob client from pool"""
         if self._pool and self._active_connections < self.max_connections:
             return self._pool.pop()
         
@@ -179,7 +179,7 @@ class AzureConnectionPool:
         return client.get_container_client(container_name)
     
     def return_client(self, client):
-        """Retorna cliente para o pool"""
+        """Returns client to pool"""
         if len(self._pool) < self.max_connections:
             self._pool.append(client)
         self._active_connections -= 1
@@ -187,19 +187,19 @@ class AzureConnectionPool:
 
 ---
 
-## 🔄 Otimizações de Performance
+## 🔄 Performance Optimizations
 
 ### **Adaptive Query Execution (AQE)**
 
 ```python
 def enable_aqe_optimizations(spark):
-    """Habilita otimizações do Adaptive Query Execution"""
+    """Enables Adaptive Query Execution optimizations"""
     
-    # AQE Principal
+    # Main AQE
     spark.conf.set("spark.sql.adaptive.enabled", "true")
     spark.conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
     
-    # Otimização de Joins
+    # Join Optimization
     spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")
     spark.conf.set("spark.sql.adaptive.skewJoin.skewedPartitionFactor", "5")
     spark.conf.set("spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes", "256MB")
@@ -218,11 +218,11 @@ def enable_aqe_optimizations(spark):
     spark.conf.set("spark.sql.adaptive.advisoryPartitionSizeInBytes", "128MB")
 ```
 
-### **Cache Inteligente**
+### **Smart Cache**
 
 ```python
 class SmartCache:
-    """Cache inteligente para DataFrames frequentemente acessados"""
+    """Smart cache for frequently accessed DataFrames"""
     
     def __init__(self, spark):
         self.spark = spark
@@ -230,43 +230,43 @@ class SmartCache:
         self.access_count = {}
     
     def cache_if_beneficial(self, df, key, threshold=2):
-        """Cache DataFrame se for acessado frequentemente"""
+        """Cache DataFrame if frequently accessed"""
         self.access_count[key] = self.access_count.get(key, 0) + 1
         
         if self.access_count[key] >= threshold and key not in self.cached_dfs:
-            # Cache com storage level otimizado
+            # Cache with optimized storage level
             df.cache()
-            df.count()  # Força materialização
+            df.count()  # Force materialization
             self.cached_dfs[key] = df
-            logger.info(f"DataFrame {key} foi cacheado após {self.access_count[key]} acessos")
+            logger.info(f"DataFrame {key} cached after {self.access_count[key]} accesses")
         
         return self.cached_dfs.get(key, df)
     
     def clear_cache(self):
-        """Limpa cache de todos os DataFrames"""
+        """Clear cache for all DataFrames"""
         for key, df in self.cached_dfs.items():
             df.unpersist()
         self.cached_dfs.clear()
         self.access_count.clear()
 
-# Exemplo de uso
+# Usage example
 cache_manager = SmartCache(spark)
-df_clientes = cache_manager.cache_if_beneficial(df_clientes, "clientes")
+df_customers = cache_manager.cache_if_beneficial(df_customers, "customers")
 ```
 
-### **Particionamento Otimizado**
+### **Optimized Partitioning**
 
 ```python
 def optimize_partitioning(df, partition_cols, target_partition_size="128MB"):
     """
-    Otimiza particionamento baseado no tamanho dos dados
+    Optimizes partitioning based on data size
     """
-    # Calcular número ideal de partições
+    # Calculate ideal number of partitions
     df_size_bytes = df.rdd.map(lambda x: len(str(x))).sum()
     target_size_bytes = int(target_partition_size.replace("MB", "")) * 1024 * 1024
     optimal_partitions = max(1, df_size_bytes // target_size_bytes)
     
-    # Reparticionar se necessário
+    # Repartition if necessary
     current_partitions = df.rdd.getNumPartitions()
     if current_partitions != optimal_partitions:
         if partition_cols:
@@ -276,24 +276,24 @@ def optimize_partitioning(df, partition_cols, target_partition_size="128MB"):
     
     return df
 
-# Exemplo de uso
-df_entregas_optimized = optimize_partitioning(
-    df_entregas, 
-    ["ano", "mes"], 
+# Usage example
+df_deliveries_optimized = optimize_partitioning(
+    df_deliveries, 
+    ["year", "month"], 
     target_partition_size="256MB"
 )
 ```
 
 ---
 
-## 💾 Otimizações de I/O
+## 💾 I/O Optimizations
 
-### **Leitura Otimizada**
+### **Optimized Reading**
 
 ```python
 def read_delta_optimized(spark, path, filters=None, columns=None):
     """
-    Leitura otimizada de tabelas Delta
+    Optimized reading of Delta tables
     """
     reader = spark.read.format("delta")
     
@@ -310,73 +310,73 @@ def read_delta_optimized(spark, path, filters=None, columns=None):
     
     # Z-Order optimization hint
     if hasattr(df, 'hint'):
-        df = df.hint("Z_ORDER", ["data_processamento"])
+        df = df.hint("Z_ORDER", ["processing_date"])
     
     return df
 
-# Exemplo de uso
-df_entregas = read_delta_optimized(
+# Usage example
+df_deliveries = read_delta_optimized(
     spark,
-    "wasbs://silver@account.blob.core.windows.net/entregas",
-    filters=["data_entrega >= '2024-01-01'"],
-    columns=["id_entrega", "valor_frete", "status_entrega"]
+    "wasbs://silver@account.blob.core.windows.net/deliveries",
+    filters=["delivery_date >= '2024-01-01'"],
+    columns=["delivery_id", "freight_value", "delivery_status"]
 )
 ```
 
-### **Escrita Otimizada**
+### **Optimized Writing**
 
 ```python
 def write_delta_optimized(df, path, partition_cols=None, mode="overwrite"):
     """
-    Escrita otimizada para tabelas Delta
+    Optimized writing for Delta tables
     """
     writer = df.write.format("delta").mode(mode)
     
-    # Configurações de otimização
+    # Optimization configurations
     writer = writer.option("overwriteSchema", "true") \
                    .option("mergeSchema", "true") \
                    .option("optimizeWrite", "true") \
                    .option("autoCompact", "true")
     
-    # Particionamento se especificado
+    # Partitioning if specified
     if partition_cols:
         writer = writer.partitionBy(*partition_cols)
     
-    # Configurar tamanho de arquivo alvo
+    # Configure target file size
     spark.conf.set("spark.databricks.delta.targetFileSize", "134217728")  # 128MB
     
     writer.save(path)
     
-    # Otimização pós-escrita
-    spark.sql(f"OPTIMIZE delta.`{path}` ZORDER BY (data_processamento)")
+    # Post-write optimization
+    spark.sql(f"OPTIMIZE delta.`{path}` ZORDER BY (processing_date)")
 
-# Exemplo de uso
+# Usage example
 write_delta_optimized(
     df_silver,
-    "wasbs://silver@account.blob.core.windows.net/clientes",
-    partition_cols=["ano", "mes"]
+    "wasbs://silver@account.blob.core.windows.net/customers",
+    partition_cols=["year", "month"]
 )
 ```
 
 ---
 
-## 🔍 Monitoramento de Performance
+## 🔍 Performance Monitoring
 
-### **Métricas de Spark**
+### **Spark Metrics**
 
 ```python
 class SparkMetricsCollector:
-    """Coleta métricas de performance do Spark"""
+    """Collects Spark performance metrics"""
     
     def __init__(self, spark):
         self.spark = spark
         self.metrics = {}
     
     def collect_job_metrics(self, job_description):
-        """Coleta métricas de um job específico"""
+        """Collects metrics for a specific job"""
         sc = self.spark.sparkContext
         
-        # Métricas básicas
+        # Basic metrics
         self.metrics[job_description] = {
             "active_jobs": len(sc.statusTracker().getActiveJobIds()),
             "active_stages": len(sc.statusTracker().getActiveStageIds()),
@@ -387,7 +387,7 @@ class SparkMetricsCollector:
         }
     
     def log_performance_summary(self):
-        """Log resumo de performance"""
+        """Log performance summary"""
         for job, metrics in self.metrics.items():
             memory_usage_pct = (metrics["memory_used"] / metrics["memory_total"]) * 100
             logger.info(f"""
@@ -397,16 +397,16 @@ class SparkMetricsCollector:
             Memory Usage: {memory_usage_pct:.1f}%
             """)
 
-# Exemplo de uso
+# Usage example
 metrics_collector = SparkMetricsCollector(spark)
 metrics_collector.collect_job_metrics("bronze_processing")
 ```
 
-### **Alertas de Performance**
+### **Performance Alerts**
 
 ```python
 def setup_performance_alerts(spark):
-    """Configura alertas de performance"""
+    """Sets up performance alerts"""
     
     def check_memory_usage():
         sc = spark.sparkContext
@@ -416,16 +416,16 @@ def setup_performance_alerts(spark):
             if executor.maxMemory > 0:
                 usage_pct = (executor.memoryUsed / executor.maxMemory) * 100
                 if usage_pct > 90:
-                    logger.warning(f"Executor {executor.executorId} usando {usage_pct:.1f}% da memória")
+                    logger.warning(f"Executor {executor.executorId} using {usage_pct:.1f}% of memory")
     
     def check_failed_tasks():
         sc = spark.sparkContext
         for stage_id in sc.statusTracker().getActiveStageIds():
             stage_info = sc.statusTracker().getStageInfo(stage_id)
             if stage_info and stage_info.numFailedTasks > 0:
-                logger.error(f"Stage {stage_id} tem {stage_info.numFailedTasks} tasks falhadas")
+                logger.error(f"Stage {stage_id} has {stage_info.numFailedTasks} failed tasks")
     
-    # Executar verificações periodicamente
+    # Run checks periodically
     import threading
     import time
     
@@ -433,7 +433,7 @@ def setup_performance_alerts(spark):
         while True:
             check_memory_usage()
             check_failed_tasks()
-            time.sleep(30)  # Verificar a cada 30 segundos
+            time.sleep(30)  # Check every 30 seconds
     
     monitor_thread = threading.Thread(target=monitor, daemon=True)
     monitor_thread.start()
@@ -441,31 +441,31 @@ def setup_performance_alerts(spark):
 
 ---
 
-## 🛠️ Configuração por Tipo de Workload
+## 🛠️ Workload-Specific Configuration
 
 ### **ETL Batch Processing**
 
 ```python
 def spark_config_etl_batch():
-    """Configuração otimizada para processamento ETL em lote"""
+    """Optimized configuration for batch ETL processing"""
     return {
-        # Memória alta para processamento de grandes volumes
+        # High memory for large volume processing
         "spark.executor.memory": "8g",
         "spark.driver.memory": "4g",
         
-        # Mais partições para paralelismo
+        # More partitions for parallelism
         "spark.sql.shuffle.partitions": "400",
         "spark.default.parallelism": "200",
         
-        # Timeout maior para jobs longos
+        # Higher timeout for long jobs
         "spark.network.timeout": "1800s",
         "spark.sql.broadcastTimeout": "1800s",
         
-        # Compressão para economizar I/O
+        # Compression to save I/O
         "spark.sql.parquet.compression.codec": "snappy",
         "spark.sql.orc.compression.codec": "snappy",
         
-        # Otimizações de serialização
+        # Serialization optimizations
         "spark.serializer": "org.apache.spark.serializer.KryoSerializer",
         "spark.kryo.unsafe": "true",
         "spark.kryo.registrationRequired": "false"
@@ -476,40 +476,40 @@ def spark_config_etl_batch():
 
 ```python
 def spark_config_streaming():
-    """Configuração otimizada para streaming"""
+    """Optimized configuration for streaming"""
     return {
-        # Memória menor, mais executors
+        # Lower memory, more executors
         "spark.executor.memory": "2g",
         "spark.executor.cores": "2",
         "spark.executor.instances": "8",
         
-        # Baixa latência
+        # Low latency
         "spark.streaming.blockInterval": "50ms",
         "spark.streaming.receiver.maxRate": "10000",
         
-        # Checkpoint frequente
+        # Frequent checkpoint
         "spark.sql.streaming.checkpointLocation": "/tmp/streaming-checkpoints",
         "spark.sql.streaming.minBatchesToRetain": "5",
         
-        # Buffer menor para baixa latência
+        # Smaller buffer for low latency
         "spark.sql.shuffle.partitions": "100"
     }
 ```
 
 ---
 
-## 📊 Benchmark e Tuning
+## 📊 Benchmark and Tuning
 
-### **Script de Benchmark**
+### **Benchmark Script**
 
 ```python
 def benchmark_spark_config(spark, df, operation_name):
-    """Executa benchmark de uma operação Spark"""
+    """Runs benchmark for a Spark operation"""
     import time
     
     start_time = time.time()
     
-    # Força execução com count()
+    # Force execution with count()
     if hasattr(df, 'count'):
         result_count = df.count()
     else:
@@ -518,7 +518,7 @@ def benchmark_spark_config(spark, df, operation_name):
     end_time = time.time()
     execution_time = end_time - start_time
     
-    # Coleta métricas do Spark
+    # Collect Spark metrics
     sc = spark.sparkContext
     executors = sc.statusTracker().getExecutorInfos()
     
@@ -542,36 +542,36 @@ def benchmark_spark_config(spark, df, operation_name):
     
     return metrics
 
-# Exemplo de uso
+# Usage example
 benchmark_spark_config(spark, df_bronze_processing, "Bronze Layer Processing")
 ```
 
 ---
 
-## ⚙️ Configuração Dinâmica
+## ⚙️ Dynamic Configuration
 
 ```python
 class DynamicSparkConfig:
-    """Configuração dinâmica baseada no ambiente e workload"""
+    """Dynamic configuration based on environment and workload"""
     
     def __init__(self):
         self.configs = {}
     
     def auto_configure(self, data_size_gb, operation_type="etl"):
-        """Configuração automática baseada no tamanho dos dados"""
+        """Automatic configuration based on data size"""
         
         if data_size_gb < 1:
-            # Dados pequenos
+            # Small data
             memory_per_executor = "2g"
             num_executors = 1
             shuffle_partitions = 50
         elif data_size_gb < 10:
-            # Dados médios
+            # Medium data
             memory_per_executor = "4g"
             num_executors = 2
             shuffle_partitions = 200
         else:
-            # Dados grandes
+            # Large data
             memory_per_executor = "8g"
             num_executors = 4
             shuffle_partitions = 400
@@ -586,11 +586,11 @@ class DynamicSparkConfig:
         return self.configs
     
     def apply_to_spark(self, spark):
-        """Aplica configurações ao SparkSession"""
+        """Apply configurations to SparkSession"""
         for key, value in self.configs.items():
             spark.conf.set(key, value)
 
-# Exemplo de uso
+# Usage example
 config_manager = DynamicSparkConfig()
 optimal_config = config_manager.auto_configure(data_size_gb=5.2)
 config_manager.apply_to_spark(spark)
@@ -598,4 +598,4 @@ config_manager.apply_to_spark(spark)
 
 ---
 
-Essas otimizações podem melhorar significativamente a performance do seu pipeline Spark, especialmente quando processando grandes volumes de dados no Azure Data Lake. Lembre-se de sempre fazer benchmark das configurações em seu ambiente específico para encontrar os valores ideais. 
+These optimizations can significantly improve your Spark pipeline performance, especially when processing large volumes of data in Azure Data Lake. Remember to always benchmark configurations in your specific environment to find ideal values.
